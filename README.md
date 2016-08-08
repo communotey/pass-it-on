@@ -15,7 +15,7 @@
 
 A user should be able to use pass-it-on as an option when starting their server, for example:
 
-`node --user=goatandsheep --password=SherbetLemon`
+`node app.js --user=goatandsheep --password=SherbetLemon`
 
 ### ADMIN user
 
