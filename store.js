@@ -30,7 +30,7 @@ function getGroups(group, groups) {
     
     if (obj[group].groups_composed != []) {
         
-        var fn = function asyncMultiplyBy2(v){ // sample async action
+        var fn = function next_level_recursion(v){ // sample async action
             // return new Promise(resolve => setTimeout(() => resolve(v * 2), 100));
             return new Promise(resolve => setTimeout(() => resolve(getGroups(group, groups), 100));
         };

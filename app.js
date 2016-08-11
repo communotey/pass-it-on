@@ -4,6 +4,8 @@ var fs = require("fs");
 var cli = require("cli");
 
 var crypto = require('./crypto'); 
+// crypto.generate_private()
+
 var store = require('./store');
 
 

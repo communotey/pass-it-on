@@ -28,7 +28,6 @@
   },
   "homepage": "https://github.com/goatandsheep/pass-it-on#readme",
   "dependencies": {
-    "crypto": "0.0.3",
     "promise": "^7.1.1"
   }
 }

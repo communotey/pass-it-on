@@ -45,3 +45,7 @@ module.exports = {
     generate_private: generate_private,
     generate_user_private: generate_user_private
 }
+
+// TODO: a method to access group keys if you already have your private key
+// * Perhaps use it to unlock / lock the user-group key
+// * then use the group key to get the passwords necessary
