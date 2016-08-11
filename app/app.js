@@ -38,20 +38,68 @@ var p = read('store.json', 'utf8')
 //    A. Admin can add new users
 //    B. Everyone else can 
 
+// 1. First time: setup store.json
+  // create admin user
+  // obj.users = {}
+  // obj.groups = {}
+  // obj.secrets = {}
+
 var groups = [];
+var option; // TODO: get option from cli
+var item; // what does the option affect?
+
 if (user === 'admin') {
-  // add groups
-  // add secret to group
-  // add users
-  // delete groups
-  // delete secrets
-  // delete users
+  switch (option) {
+    case 'g':
+      // add group
+      // item: name of group
+      break;
+    case 's':
+      // add secret to group
+      // item: name of group
+      // secret: value
+      break;
+    case 'd':
+      // delete group
+      // item: name of group
+      break;
+    case 'e':
+      // erase secret
+      // item: name of secret
+      break;
+    case 'n':
+      // new user
+      // item: name of user
+      // TODO: how does this work??
+      break;
+    case 'r':
+      // remove user
+      // item: name of user
+    // TODO: change password
+  }
 }
 else {
   groups = store.getGroupList(user);
-  // add secret to group part off
-  // delete accessible secrets
-  // list accessible secrets
-  // read accessible secrets
+  switch (option) {
+    case 'a':
+      // add / modify secret to associated group
+      // item: name of secret
+      // secret: value
+      break;
+    case 'd':
+      // delete accessible secrets
+      // item: which secret
+      break;
+    case 'l':
+      // list accessible secrets
+      break;
+    case 'r':
+      // read all accessible secrets
+      break;
+    case 'f':
+      // fetch specific accessible secret
+      // item: name of secret
+    // TODO: change password
+  }
 }
 

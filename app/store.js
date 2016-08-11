@@ -1,86 +1,96 @@
 /*
     Store.js
+    --------
+    This module manages file I/O for a JSON-based flat file database.
     
-    This module manages the keys and secrets.
+    Usage
+    -----
+    var store = require('./store');
+    
+    store.open(STORE_FILE_LOCATION)
+    
+    store.data.groups.group1.blah = 3;
+    store.write() // optional
+    store.data.users = [{username: 'user1'}]
+    
+    store.close()
+    
+    NOTE:   open(fileLocation)  before making changes to `store.data`.
+            write()             to write the current `store.data` to the file.
+            close()             to write & close the file.
 */
 
-const STORE_FILE_NAME = 'store.js';
+module.exports = {
+    data: file.data,
+    open: open,
+    close: close,
+    write: write
+}
+
 
 const fs = require('fs');
 const Promise = require('promise')
 
-var fileOpen = false;
-var file = '';
-
-function open() {
-    fs.open('./store.json')
-}
-
-// admin
-function addUser(name) {
-    // kl;ads
-}
-
-// admin
-function createGroup(name) {
+/*
+    This object holds data about the currently open file
     
+    If fileDescriptor != null, a file is open!
+    Close that file before opening a new one.
+*/
+var file = {
+    data: null,
+    fileDescriptor: null,
+};
+
+/*
+    @return {Boolean}
+        true if file is open, false otherwise
+    @private
+*/
+function isFileOpen() {
+    return file.fileDescriptor !== null;
 }
 
-
-function addKeyToGroup() {
-        
-}
-
-// recursive function that adds the groups user is part of + groups their group are part of
-function getGroups(group, groups) {
-    //TODO: get groups in groups into 1D array
+/*
+    Opens the store file.
     
-    if (obj[group].groups_composed != []) {
-        
-        var fn = function next_level_recursion(v){ // sample async action
-            // return new Promise(resolve => setTimeout(() => resolve(v * 2), 100));
-            return new Promise(resolve => setTimeout(() => resolve(getGroups(group, groups), 100));
-        };
-        // map over forEach since it returns
-        
-        var actions = obj[groups].groups_composed.map(fn); // run the function over all items.
-        
-        // we now have a promises array and we want to wait for it
-        
-        var results = Promise.all(actions); // pass array of promises
-        
-        results.then(data => // or just .then(console.log)
-            groups.concat(data) // [2, 4, 6, 8, 10]
-        );
-        
+    @param {String} fileLocation
+        Location of file which should be opened.
+*/
+function open(fileLocation) {
+    if(isFileOpen()) {
+        close().then(function(error) {
+            if(!error) {
+                proceed();
+            } else {
+                throw new Error(error)
+            }
+        })
+    } else {
+        proceed()
     }
-    // else do nothing, i.e. base case is when there are no more groups to parse
+    
+    function proceed() {
+        fs.open(fileLocation, 'a+', function(error, fileDescriptor) {
+            
+        })
+    }
+        
 }
 
-
-// less params. is there overloading in js?
-function getGroupList(user) {
-    var groups = obj.users[user].groups;
+/*
+    Closes the currently open file.
     
-    var fn = function get_subgroups(v){ // sample async action
-        return new Promise(resolve => setTimeout(() => resolve(getGroups(group, groups), 100));
-    };
-    // map over forEach since it returns
-    
-    var actions = groups.map(fn); // run the function over all items.
-    
-    // we now have a promises array and we want to wait for it
-    
-    var results = Promise.all(actions); // pass array of promises
-    
-    results.then(data => // or just .then(console.log)
-        groups.concat(data) // [2, 4, 6, 8, 10]
-    );
-    
-    return groups;
-}
-
-
-function deleteSecret(secret, user) {
-    delete obj.secrets[secret];
+    @throws {Error} 
+        file did not close properly. 
+*/
+function close() {
+    return new Promse(function(resolve, reject) {
+        if(isFileOpen()) {
+            fs.close(file.fileDescriptor, function(error) {
+                if(error) throw new Error(error);
+                return resolve();
+            });
+        }
+    });
 }
