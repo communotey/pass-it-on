@@ -1,6 +1,6 @@
 # Pass-It-On
 
-[![CircleCI](https://circleci.com/gh/goatandsheep/pass-it-on.svg?style=svg)](https://circleci.com/gh/goatandsheep/pass-it-on)
+[![Build Status](https://travis-ci.org/goatandsheep/pass-it-on.svg?branch=master)](https://travis-ci.org/goatandsheep/pass-it-on)
 
 > **Note**: there is no guarantee that this is secure and definitely requires extensive security testing before it can be used in production settings. For now, you should probably just use [AWS KMS](https://aws.amazon.com/documentation/kms/).
 
