@@ -27,9 +27,11 @@ function hash_password(password, salt) {
 }
 
 
-function generate_private() {
+function generate_keys() {
     // NOTE: yes there is a passphrase that can encrypt the private key, but it's using an outdated standard
-    // Hence: we still need the AES thing above
+    // Hence: we still need the AES thing above for password
+    
+    var privkey, pubkey;
     var options = {
         userIds: [{ name:'Jon Smith', email:'jon@example.com' }], // multiple user IDs 
         numBits: 4096,                                            // RSA key size 
@@ -37,8 +39,8 @@ function generate_private() {
     };
      
     pgp.generateKey(options).then(function(key) {
-        var privkey = key.privateKeyArmored; // '-----BEGIN PGP PRIVATE KEY BLOCK ... ' 
-        var pubkey = key.publicKeyArmored;   // '-----BEGIN PGP PUBLIC KEY BLOCK ... ' 
+        privkey = key.privateKeyArmored; // '-----BEGIN PGP PRIVATE KEY BLOCK ... ' 
+        pubkey = key.publicKeyArmored;   // '-----BEGIN PGP PUBLIC KEY BLOCK ... ' 
     });
     var keys = {
         private: privkey,
@@ -47,7 +49,7 @@ function generate_private() {
     return keys
 }
 
-function generate_user_private(password) {
+function generate_user_keys(password) {
     // TODO: generate user's private key
     
     // generate random salt
@@ -60,11 +62,56 @@ function generate_user_private(password) {
     var private = token.encode("bob");
 }
 
+function encrypt_secret(secret, pubkey) {
+    var options = {
+        data: secret,                              // input as String (or Uint8Array) 
+        publicKeys: pgp.key.readArmored(pubkey).keys,  // for encryption
+    };
+    pgp.encrypt(options).then(function(ciphertext) {
+        return ciphertext.data; // '-----BEGIN PGP MESSAGE ... END PGP MESSAGE-----' 
+    });
+}
+
+function decrypt_crypt(crypt, privkey) {
+    var options = {
+        message: pgp.message.readArmored(crypt),            // parse armored message
+        privateKey: pgp.key.readArmored(privkey).keys[0]    // for decryption 
+    };
+     
+    pgp.decrypt(options).then(function(plaintext) {
+        return plaintext.data;                              // Secret
+    });
+}
+
+function find_pubkey_server(server, email) {
+    var hkp = new pgp.HKP(server);
+     
+    var options = {
+        query: email
+    };
+     
+    hkp.lookup(options).then(function(key) {
+        return pgp.key.readArmored(key);
+    });
+}
+
+// NOTE: NOT FUNCTIONAL
+function store_pubkey_server(server, pubkey, email) {
+    var hkp = new pgp.HKP(server);
+     
+    hkp.upload(pubkey).then(function() {
+        // TODO: finish
+    });
+}
+
 // when someone requires this module
 module.exports = {
     hash_password: hash_password,
-    generate_private: generate_private,
-    generate_user_private: generate_user_private
+    generate_keys: generate_keys,
+    generate_user_keys: generate_user_keys,
+    encrypt_secret: encrypt_secret,
+    decrypt_crypt: decrypt_crypt,
+    
 };
 
 // TODO: a method to access group keys if you already have your private key

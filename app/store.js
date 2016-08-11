@@ -9,6 +9,13 @@ const STORE_FILE_NAME = 'store.js';
 const fs = require('fs');
 const Promise = require('promise')
 
+var fileOpen = false;
+var file = '';
+
+function open() {
+    fs.open('./store.json')
+}
+
 // admin
 function addUser(name) {
     // kl;ads
@@ -53,22 +60,27 @@ function getGroups(group, groups) {
 
 // less params. is there overloading in js?
 function getGroupList(user) {
-    // TODO: forEach on all of the user's groups
-    {
-        
-        getGroups(user, [group]);
-    }
+    var groups = obj.users[user].groups;
+    
+    var fn = function get_subgroups(v){ // sample async action
+        return new Promise(resolve => setTimeout(() => resolve(getGroups(group, groups), 100));
+    };
+    // map over forEach since it returns
+    
+    var actions = groups.map(fn); // run the function over all items.
+    
+    // we now have a promises array and we want to wait for it
+    
+    var results = Promise.all(actions); // pass array of promises
+    
+    results.then(data => // or just .then(console.log)
+        groups.concat(data) // [2, 4, 6, 8, 10]
+    );
+    
+    return groups;
 }
 
 
 function deleteSecret(secret, user) {
-    var groups = getGroupList(user);
-    if ((user === "admin") | (user === "in_group")) // TODO: could be other users, but for now...
-    {
-        delete obj.secrets[secret];
-    }
-    else 
-    {
-        console.log("User not authenticated to do this action");
-    }
+    delete obj.secrets[secret];
 }
