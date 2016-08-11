@@ -47,25 +47,30 @@ var p = read('store.json', 'utf8')
 var groups = [];
 var option; // TODO: get option from cli
 var item; // what does the option affect?
+var value; // value of thing we are affecting
 
 if (user === 'admin') {
   switch (option) {
     case 'g':
       // add group
       // item: name of group
+      // obj.groups[item] = {};
       break;
     case 's':
       // add secret to group
       // item: name of group
-      // secret: value
+      // value: secret
       break;
     case 'd':
       // delete group
       // item: name of group
+      // delete obj.groups[item];
       break;
     case 'e':
       // erase secret
       // item: name of secret
+      // delete obj.secrets[item];
+      // TODO: delete wherever 
       break;
     case 'n':
       // new user
@@ -75,6 +80,10 @@ if (user === 'admin') {
     case 'r':
       // remove user
       // item: name of user
+      // for each in obj.users[item].groups, delete user key from obj.groups.group
+      // delete obj.users[item];
+      // TODO: delete user from groups 
+      
     // TODO: change password
   }
 }
@@ -84,7 +93,7 @@ else {
     case 'a':
       // add / modify secret to associated group
       // item: name of secret
-      // secret: value
+      // value: secret
       break;
     case 'd':
       // delete accessible secrets

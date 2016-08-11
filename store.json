@@ -3,15 +3,17 @@
 		"user1": {
 			"private": "aes.protected.private.key",
 			"salt": "store_salt_here",
-			"group1": "group_private_key_decrypted_with_user_private_key",
-			"group2": "group_private_key_decrypted_with_user_private_key",
-			"public": "user_public_key_encrypted_by_admins_public_key"
+			"public": "user_public_key_encrypted_by_admins_public_key",
+			"groups": {
+				"group1": "group_private_key_decrypted_with_user_private_key",
+				"group2": "group_private_key_decrypted_with_user_private_key",
+			}
 		},
 	},
 	
 	"groups": {
 		"team_instinct": {
-			"keys": {
+			"secets": {
 				"read": {
 					"secret1": "private_key_decrypted_by_group_private_key",
 				},
