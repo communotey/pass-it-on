@@ -1,0 +1,34 @@
+{
+  "name": "pass-it-on",
+  "version": "1.0.0",
+  "description": "A group password management system for git.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goatandsheep/pass-it-on.git"
+  },
+  "keywords": [
+    "security",
+    "gpg",
+    "asymetric",
+    "passwords",
+    "password",
+    "pass",
+    "it",
+    "on",
+    "pass-it-on"
+  ],
+  "author": "goatandsheep",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/goatandsheep/pass-it-on/issues"
+  },
+  "homepage": "https://github.com/goatandsheep/pass-it-on#readme",
+  "dependencies": {
+    "crypto": "0.0.3",
+    "promise": "^7.1.1"
+  }
+}
