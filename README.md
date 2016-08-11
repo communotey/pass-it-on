@@ -1,6 +1,8 @@
 # Pass-It-On
 
 [![Build Status](https://travis-ci.org/goatandsheep/pass-it-on.svg?branch=master)](https://travis-ci.org/goatandsheep/pass-it-on)
+[![Dependency Status](https://gemnasium.com/badges/github.com/goatandsheep/pass-it-on.svg)](https://gemnasium.com/github.com/goatandsheep/pass-it-on)
+[![Coverage Status](https://coveralls.io/repos/github/goatandsheep/pass-it-on/badge.svg?branch=master)](https://coveralls.io/github/goatandsheep/pass-it-on?branch=master)
 
 > **Note**: there is no guarantee that this is secure and definitely requires extensive security testing before it can be used in production settings. For now, you should probably just use [AWS KMS](https://aws.amazon.com/documentation/kms/).
 
