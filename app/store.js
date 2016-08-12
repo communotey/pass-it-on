@@ -97,27 +97,20 @@ function isOpen() {
 
 /*
     Opens a file and reads it it's content as JSON.
-    Consequently saves and closes any previous opened file.
+    Opening a file will fail if there is one open already.
     
     @param {String} fileLocation
         Location of file which should be opened.
+        
+    @throws {Error}
+        If a file is already opened.
     
     @return {Promise}
 */
 function open(fileLocation) {
     if(isOpen()) {
-        close().then(function(error) {
-            if(!error) {
-                return proceed();
-            } else {
-                throw new Error(error)
-            }
-        })
+        throw new Error('File already open, close that one first.');
     } else {
-        return proceed()
-    }
-    
-    function proceed() {
         return new Promise(function(resolve, reject) {
             // 'a+' flag: Open file for reading and appending. The file is created if it does not exist.
             fs.open(fileLocation, 'a+', function(error, fileDescriptor) {
