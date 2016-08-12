@@ -1,16 +1,25 @@
 // admin
-function addUser(name) {
+function addUser(name, pubkey, password) {
     // kl;ads
+    // TODO: temporary AES password
+    // TODO: change password on first use
 }
 
 // admin
-function createGroup(name) {
+function createGroup(name,pubkey) {
     
 }
 
 
-function addKeyToGroup() {
-        
+// name: of secret
+// value: of secret
+function addSecretToGroup(group, name, value, pubkey) {
+    
+    // creator of group can add people
+    // creator of group adds admin
+    var cipher = crypto.encrypt_secret(value, pubkey);
+    obj.groups[group].secrets[name] = cipher;
+    obj.secrets[name] = value;
 }
 
 // recursive function that adds the groups user is part of + groups their group are part of
@@ -65,4 +74,19 @@ function getGroupList(user) {
 
 function deleteSecret(secret) {
     delete obj.secrets[secret];
+}
+
+function decrypt_user_private(user, password) {
+    obj.users[user].private
+    
+}
+
+function decrypt_admin_keys(password) {
+    obj.users.admin.public
+    obj.users.admin.private
+    var keys = {
+        privkey: "private",
+        pubkey: "public"
+    };
+    return keys;
 }

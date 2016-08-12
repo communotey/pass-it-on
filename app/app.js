@@ -30,6 +30,10 @@ var p = read('store.json', 'utf8')
     return write(location, JSON.stringify(JSON.parse(str), null, '  '), 'utf8')
   })
 
+var groups = [];
+var option; // TODO: get option from cli
+var item; // what does the option affect?
+var value; // value of thing we are affecting
 
 // states
 // 1. First time
@@ -39,17 +43,15 @@ var p = read('store.json', 'utf8')
 //    B. Everyone else can 
 
 // 1. First time: setup store.json
-  // create admin user
-  // obj.users = {}
-  // obj.groups = {}
-  // obj.secrets = {}
-
-var groups = [];
-var option; // TODO: get option from cli
-var item; // what does the option affect?
-var value; // value of thing we are affecting
+if (option === 'init') {
+  obj.users = {};
+  obj.groups = {};
+  obj.secrets = {};
+  // TODO: create admin user
+}
 
 if (user === 'admin') {
+  var keys = operations.decrypt_admin_keys(password);
   switch (option) {
     case 'g':
       // add group
@@ -75,7 +77,7 @@ if (user === 'admin') {
     case 'n':
       // new user
       // item: name of user
-      // TODO: how does this work??
+      // value: temporary password
       break;
     case 'r':
       // remove user
@@ -89,11 +91,16 @@ if (user === 'admin') {
 }
 else {
   groups = store.getGroupList(user);
+  // TODO: unlock private key
+  var privkey;
   switch (option) {
     case 'a':
       // add / modify secret to associated group
       // item: name of secret
       // value: secret
+      // TODO: which group?
+      
+      // if secret exists, make key pair
       break;
     case 'd':
       // delete accessible secrets
@@ -108,7 +115,13 @@ else {
     case 'f':
       // fetch specific accessible secret
       // item: name of secret
-    // TODO: change password
+      // 1. 
+    case 'c':
+      // change password
+      // item: new password
+      
+      // relock private key
+      
   }
 }
 

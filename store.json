@@ -1,19 +1,30 @@
 {
 	"users": {
+		"admin": {
+			"privkey": "aes.protected.private.key",
+			"pubkey": "aes.protected.public.key",
+			"salt": "store_salt_here"
+		},
 		"user1": {
-			"private": "aes.protected.private.key",
+			"privkey": "aes.protected.private.key",
+			"pubkey": "user_public_key_encrypted_by_admins_public_key",
 			"salt": "store_salt_here",
-			"public": "user_public_key_encrypted_by_admins_public_key",
 			"groups": {
 				"group1": "group_private_key_decrypted_with_user_private_key",
 				"group2": "group_private_key_decrypted_with_user_private_key",
 			}
-		},
+		}
 	},
 	
 	"groups": {
 		"team_instinct": {
-			"secets": {
+			"groups_in": {
+				"go_players": {
+					
+				}
+			},
+			"pubkey": "group_public_key_encrypted_by_admin_public_key",
+			"secrets": {
 				"read": {
 					"secret1": "private_key_decrypted_by_group_private_key",
 				},
@@ -24,25 +35,12 @@
 			"users": {
 				"user1": "private_key_for_group_encrypted_by_users_public_key"
 			},
-			"groups_in": {
-				"go_players": {
-					
-				}
-			},
-			"groups_composed": {
-				"yellow_gyms": {
-					"sense": "probably none hahah",
-					"think": "i need to think about this some more, you keep going",
-					"confusing": "pretty much"
-				}
-			},
-			"public": "group_public_key_encrypted_by_admin_public_key"
 		},
 		
 	},
 	
 	"secrets": {
-		"secret1": "encrypted_by_group_public_key_decrypted_by_group_private_",
+		"secret1": "encrypted_by_secret_public_key_decrypted_by_secret_private_",
 	},
 	
 }

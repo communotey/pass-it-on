@@ -33,9 +33,9 @@ function generate_keys() {
     
     var privkey, pubkey;
     var options = {
-        userIds: [{ name:'Jon Smith', email:'jon@example.com' }], // multiple user IDs 
+        // userIds: [{ name:'Jon Smith', email:'jon@example.com' }], // multiple user IDs, could be group/username key
         numBits: 4096,                                            // RSA key size 
-        passphrase: 'super long and hard to guess secret'         // optional, protects the private key 
+        // passphrase: 'super long and hard to guess secret'         // optional, protects the private key 
     };
      
     pgp.generateKey(options).then(function(key) {
@@ -43,8 +43,8 @@ function generate_keys() {
         pubkey = key.publicKeyArmored;   // '-----BEGIN PGP PUBLIC KEY BLOCK ... ' 
     });
     var keys = {
-        private: privkey,
-        public: pubkey
+        privkey: privkey,
+        pubkey: pubkey
     }
     return keys
 }
@@ -59,13 +59,14 @@ function generate_user_keys(password) {
     var token = hash_password(password, salt);
     
     // fernet encrypt with hash
-    var private = token.encode("bob");
+    var privkey = token.encode("bob");
 }
 
 function encrypt_secret(secret, pubkey) {
     var options = {
         data: secret,                              // input as String (or Uint8Array) 
         publicKeys: pgp.key.readArmored(pubkey).keys,  // for encryption
+        // privateKeys: pgp.key.readArmored(privkey).keys // of cryptor for signing (optional)
     };
     pgp.encrypt(options).then(function(ciphertext) {
         return ciphertext.data; // '-----BEGIN PGP MESSAGE ... END PGP MESSAGE-----' 
@@ -75,6 +76,7 @@ function encrypt_secret(secret, pubkey) {
 function decrypt_crypt(crypt, privkey) {
     var options = {
         message: pgp.message.readArmored(crypt),            // parse armored message
+        // publicKeys: pgp.key.readArmored(pubkey).keys,    // of cryptor for verification (optional)
         privateKey: pgp.key.readArmored(privkey).keys[0]    // for decryption 
     };
      
