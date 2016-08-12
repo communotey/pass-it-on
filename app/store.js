@@ -1,3 +1,5 @@
+"use strict";
+
 /*
     Store.js
     --------
@@ -20,77 +22,181 @@
             close()             to write & close the file.
 */
 
-module.exports = {
-    data: file.data,
-    open: open,
-    close: close,
-    write: write
-}
-
-
 const fs = require('fs');
-const Promise = require('promise')
+const Promise = require('promise');
+
+const FILE_ENCODING = 'utf-8'; // file encoding to use when reading/writing.
 
 /*
-    This object holds data about the currently open file
+    This object holds data about the currently open file.
     
-    If fileDescriptor != null, a file is open!
-    Close that file before opening a new one.
+    json: 
+        the json in the currently opened file.
+        this is the variable you read/edit after opening the file.
+        when you write/close the file, this variable is saved in the file.
+    fileDescriptor: 
+        the `fd` that is assigned by the operating system. 
+        If fileDescriptor != null, a file is open!
+        Close that file before opening a new one.
 */
 var file = {
-    data: null,
+    json: {},
     fileDescriptor: null,
 };
+
+/*
+    Clears an object without breaking references to that object.
+    
+    In other words, effectively doing this:
+        obj = {}
+    But without breaking other references to obj.
+    
+    @param {Object} obj
+        Object whose properties should be cleared.
+    @private
+*/
+function clearObject(obj) {
+    for(var prop in obj) { 
+        if(obj.hasOwnProperty(prop)) { 
+            delete obj[prop]; 
+        } 
+    }
+}
+
+/*
+    Make one object's properties the same as another's, without breaking any references to that object.
+    
+    In other words, effectively doing this:      
+        obj = obj2
+    But without breaking other references to obj.
+    
+    @param {Object} obj
+        Object which should reflect the other object's properties.
+        (It's original properties are deleted)
+    @param {Object} obj2
+        Object to be cloned.
+    @private
+*/
+function copyObject(obj, obj2) {
+    clearObject(obj);
+    for (var prop in obj2) {
+        if(obj2.hasOwnProperty(prop)) {
+            obj[prop] = obj2[prop];
+        }
+    }
+}
 
 /*
     @return {Boolean}
         true if file is open, false otherwise
     @private
 */
-function isFileOpen() {
+function isOpen() {
     return file.fileDescriptor !== null;
 }
 
 /*
-    Opens the store file.
+    Opens a file and reads it it's content as JSON.
+    Consequently saves and closes any previous opened file.
     
     @param {String} fileLocation
         Location of file which should be opened.
+    
+    @return {Promise}
 */
 function open(fileLocation) {
-    if(isFileOpen()) {
+    if(isOpen()) {
         close().then(function(error) {
             if(!error) {
-                proceed();
+                return proceed();
             } else {
                 throw new Error(error)
             }
         })
     } else {
-        proceed()
+        return proceed()
     }
     
     function proceed() {
-        fs.open(fileLocation, 'a+', function(error, fileDescriptor) {
-            
-        })
+        return new Promise(function(resolve, reject) {
+            // 'a+' flag: Open file for reading and appending. The file is created if it does not exist.
+            fs.open(fileLocation, 'a+', function(error, fileDescriptor) {
+                fs.readFile(fileDescriptor, {encoding: FILE_ENCODING}, function(error, contents) {
+                    if(error) return reject(error);
+
+                    if(!contents) {
+                        contents = {};
+                    } else {
+                        try {
+                            contents = JSON.parse(contents);
+                        } catch(syntaxError) {
+                            return reject(syntaxError);
+                        }
+                    }
+
+                    file.data = contents ? contents : {};
+                    return resolve();
+                });
+            });
+
+        });
     }
-        
 }
 
 /*
     Closes the currently open file.
     
     @throws {Error} 
-        file did not close properly. 
+        File did not close properly or no file was open.
+        
+    @return {Promise}
 */
 function close() {
-    return new Promse(function(resolve, reject) {
-        if(isFileOpen()) {
-            fs.close(file.fileDescriptor, function(error) {
-                if(error) throw new Error(error);
-                return resolve();
-            });
+    return new Promise(function(resolve, reject) {
+        if(isOpen()) {
+            write().then(function() {
+                fs.close(file.fileDescriptor, function(error) {
+                    if(error) throw new Error(error);
+                    return resolve();
+                });
+            }, function(error) {
+                return reject(error);
+            })
+        } else {
+            throw new Error('Tried to close when no file was open.')
         }
     });
+}
+
+/*
+    Saves current state of the data in the currently open file.
+    
+    @throws {Error}
+        Fails to write when no file is not open!
+        
+    @return {Promise}
+        Resolves when data is saved successfully!
+*/
+function write() {
+    if(!isOpen()) {
+        throw new Error('Tried to write when no file was open.');
+    }
+    
+    return new Promise(function(resolve, reject) {
+        var data = JSON.stringify(file.data);
+        
+        fs.write(file.fileDescriptor, data, FILE_ENCODING, function(error, written, string) {
+            if(error) return reject(error);
+            
+            return resolve();
+        });
+    });
+}
+
+module.exports = {
+    data: file.json,
+    open: open,
+    close: close,
+    write: write,
+    isOpen: isOpen
 }
