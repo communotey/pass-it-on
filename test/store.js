@@ -2,6 +2,7 @@ const fs = require('fs');
 const should = require('should');
 const store = require('../app/store');
 
+const TEST_FILE_PATH = 'store.json';
 const JSON_STRING = JSON.stringify([1, 2, {three: 'four'}]);
 const INVALID_JSON_STRING = '[1, 2, {three:"four"}, ]'
 
@@ -11,6 +12,15 @@ const INVALID_JSON_STRING = '[1, 2, {three:"four"}, ]'
 
 describe('store.js', function() {
     describe('Opening a file', function() {
+        function storeExists() {
+            return fs.statSync(TEST_FILE_PATH).isFile();
+        }
+        function deleteStore() {
+            if(storeExists()) {
+                fs.unlinkSync(TEST_FILE_PATH);
+            }
+        }
+
         describe('which exists', function() {
             describe('has data which is not JSON', function() {
                 it('throws an exception', function() {
@@ -18,17 +28,40 @@ describe('store.js', function() {
                 });
             });
            
-            it('has data which is JSON', function() {
+            describe('has data which is JSON', function() {
                it('retrieves the data successfully in JSON format', function() {
                    
                });
             });
         });
        
-        describe("which doesn't exists", function() {
-            it('', function() {
-               
-            })
+        describe("which doesn't exist", function() {
+            it('is created automatically', function() {
+                deleteStore();
+                               
+                store.open(TEST_FILE_PATH);
+                
+                storeExists().should.be.true();
+            });
+            
+            it("is assumed to have an empty object as it's data", function() {
+                deleteStore();
+                
+                store.open(TEST_FILE_PATH);
+                
+                store.data.should.equal({});
+            });
         });
+        
+        describe('when one is open already', function() {
+            it('should fail', function() {
+                store.open(TEST_FILE_PATH); 
+            });
+        });
+        
     });
+    
+    describe('Writing to a file', function() {
+        
+    })
 });

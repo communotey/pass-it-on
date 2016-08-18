@@ -1,12 +1,34 @@
 // admin
-function addUser(name, pubkey, password) {
+function createUser(name) {
     // kl;ads
     // TODO: temporary AES password
     // TODO: change password on first use
 }
 
+
 // admin
-function createGroup(name,pubkey) {
+function addUserToGroup(username, groupName, pubkey, password) {
+    // TODO: get group private key
+    // TODO: encrypt privkey with user pubkey
+    groups[groupName].users[username] = crypt
+    users[username].groups += groupName
+    
+}
+
+// admin
+function changeGroupKeys(adminPrivkey) {
+    // recrypt all group keys with new privkey
+    // recrypt all group secrets with group privkey
+}
+
+// admin
+function changeSecret(groupPrivkey, value) {
+    // recrypt with new value using group private key
+}
+
+
+// admin
+function createGroup(name, pubkey) {
     
 }
 
@@ -28,7 +50,7 @@ function getGroups(group, groups) {
     
     if (obj[group].groups_composed != []) {
         
-        var fn = function next_level_recursion(v){ // sample async action
+        var fn = function nextLevelRecursion(v){ // sample async action
             // return new Promise(resolve => setTimeout(() => resolve(v * 2), 100));
             return new Promise(resolve => setTimeout(() => resolve(getGroups(group, groups), 100));
         };
@@ -76,12 +98,12 @@ function deleteSecret(secret) {
     delete obj.secrets[secret];
 }
 
-function decrypt_user_private(user, password) {
-    obj.users[user].private
+function decryptUserPrivate(user, password) {
+    obj.users[user].private;
     
 }
 
-function decrypt_admin_keys(password) {
+function decryptAdminKeys(password) {
     obj.users.admin.public
     obj.users.admin.private
     var keys = {

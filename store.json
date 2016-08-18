@@ -40,7 +40,7 @@
 	},
 	
 	"secrets": {
-		"secret1": "encrypted_by_secret_public_key_decrypted_by_secret_private_",
+		"secret1": "encrypted_by_secret_public_key_decrypted_by_secret_private_key",
 	},
 	
 }
