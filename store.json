@@ -9,10 +9,7 @@
 			"privkey": "aes.protected.private.key",
 			"pubkey": "user_public_key_encrypted_by_admins_public_key",
 			"salt": "store_salt_here",
-			"groups": {
-				"group1": "group_private_key_decrypted_with_user_private_key",
-				"group2": "group_private_key_decrypted_with_user_private_key",
-			}
+			"groups": ["group1","group2"]
 		}
 	},
 	
@@ -33,7 +30,7 @@
 				}
 			},
 			"users": {
-				"user1": "private_key_for_group_encrypted_by_users_public_key"
+				"user1": "group_private_key_decrypted_with_user_private_key"
 			},
 		},
 		

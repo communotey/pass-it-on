@@ -1,12 +1,13 @@
-var Promise = require('promise');
+const Promise = require('promise');
 
-var fs = require("fs");
-var cli = require("cli");
+const fs = require("fs");
+const cli = require("cli");
 
-var crypto = require('./crypto'); 
+const crypto = require('./crypto'); 
 // crypto.generate_private()
 
-var store = require('./store');
+const STORE_FILE_LOCATION = 'store.json';
+const store = require('./store');
 
 var user, password, location;
 
@@ -44,10 +45,14 @@ var value; // value of thing we are affecting
 
 // 1. First time: setup store.json
 if (option === 'init') {
-  obj.users = {};
-  obj.groups = {};
-  obj.secrets = {};
-  // TODO: create admin user
+  store.open(STORE_FILE_LOCATION);
+  store.data.users = {};
+  store.data.groups = {};
+  store.data.secrets = {};
+  store.close();
+  
+  // TODO: generate admin user
+  
 }
 
 if (user === 'admin') {
@@ -56,7 +61,7 @@ if (user === 'admin') {
     case 'g':
       // add group
       // item: name of group
-      // obj.groups[item] = {};
+      // store.data.groups[item] = {};
       break;
     case 's':
       // add secret to group
@@ -66,12 +71,12 @@ if (user === 'admin') {
     case 'd':
       // delete group
       // item: name of group
-      // delete obj.groups[item];
+      // delete store.data.groups[item];
       break;
     case 'e':
       // erase secret
       // item: name of secret
-      // delete obj.secrets[item];
+      // delete store.data.secrets[item];
       // TODO: delete wherever 
       break;
     case 'n':
@@ -82,8 +87,8 @@ if (user === 'admin') {
     case 'r':
       // remove user
       // item: name of user
-      // for each in obj.users[item].groups, delete user key from obj.groups.group
-      // delete obj.users[item];
+      // for each in store.data.users[item].groups, delete user key from store.data.groups.group
+      // delete store.data.users[item];
       // TODO: delete user from groups 
       
     // TODO: change password
@@ -105,6 +110,7 @@ else {
     case 'd':
       // delete accessible secrets
       // item: which secret
+      // operations.deleteSecret(item)
       break;
     case 'l':
       // list accessible secrets
@@ -115,13 +121,13 @@ else {
     case 'f':
       // fetch specific accessible secret
       // item: name of secret
-      // 1. 
     case 'c':
       // change password
       // item: new password
+      // operations.changePassword(user, password, item)
       
       // relock private key
-      
+    // TODO: if password starts with "t_", change it, i.e. temp password
   }
 }
 

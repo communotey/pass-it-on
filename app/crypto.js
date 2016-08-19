@@ -12,9 +12,9 @@ var b64 = require('base64url');
 
 pgp.initWorker({ path:'openpgp.worker.js' });
 
-function hash_password(password, salt) {
-    var pbkdf2_hash = Promise.denodeify(crypto.pbkdf2)
-    var derivedKey = pbkdf2_hash(password, salt, 100000, 32, 'sha512');
+function hashPassword(password, salt) {
+    var pbkdf2Hash = Promise.denodeify(crypto.pbkdf2)
+    var derivedKey = pbkdf2Hash(password, salt, 100000, 32, 'sha512');
     var hashed = b64.encode(derivedKey);
     
     var secret = new fernet.Secret(hashed);
@@ -27,7 +27,7 @@ function hash_password(password, salt) {
 }
 
 
-function generate_keys() {
+function generateKeys() {
     // NOTE: yes there is a passphrase that can encrypt the private key, but it's using an outdated standard
     // Hence: we still need the AES thing above for password
     
@@ -49,20 +49,72 @@ function generate_keys() {
     return keys
 }
 
-function generate_user_keys(password) {
-    // TODO: generate user's private key
+
+// symmetric encryption using fernet
+function encryptKeysSym(secret, passphrase, salt) {
+
+    // generate hash with password+salt
+    var token = hashPassword(passphrase, salt);
+    
+    // fernet encrypt with hash
+    return token.encode(secret);
+}
+
+// symmetric decryption using fernet
+function decryptKeysSym(crypt, passphrase, salt) {
+    
+    // generate hash with password+salt
+    var token = hashPassword(passphrase, salt);
+    
+    // fernet decrypt with hash
+    return token.decode(crypt);
+}
+
+function generateAdminKeys(password) {
+    
+    // generate user's private key
+    var keys = generateKeys()
     
     // generate random salt
     var salt = crypto.randomBytes(16);
     
-    // generate hash with password+salt
-    var token = hash_password(password, salt);
+    var privkey = encryptKeysSym(keys.privkey, password, salt);
+    var pubkey = encryptKeysSym(keys.pubkey, password, salt);
     
-    // fernet encrypt with hash
-    var privkey = token.encode("bob");
+    var user = {
+        privkey: privkey,
+        pubkey: pubkey,
+        salt: salt,
+        password: password
+    };
+    return user;
 }
 
-function encrypt_secret(secret, pubkey) {
+function generateUserKeys() {
+    
+    // generate temporary password
+    var password = crypto.randomBytes(12).toString('hex');
+    password = "t_" + password;
+    
+    // generate user's private key
+    var keys = generateKeys()
+    
+    // generate random salt
+    var salt = crypto.randomBytes(16);
+    
+    var privkey = encryptKeysSym(keys.privkey, password, salt);
+    
+    var user = {
+        privkey: privkey,
+        pubkey: keys.pubkey,
+        salt: salt,
+        password: password
+    };
+    return user;
+}
+
+// assymetric encrypt
+function encryptSecret(secret, pubkey) {
     var options = {
         data: secret,                              // input as String (or Uint8Array) 
         publicKeys: pgp.key.readArmored(pubkey).keys,  // for encryption
@@ -72,8 +124,8 @@ function encrypt_secret(secret, pubkey) {
         return ciphertext.data; // '-----BEGIN PGP MESSAGE ... END PGP MESSAGE-----' 
     });
 }
-
-function decrypt_crypt(crypt, privkey) {
+// assymetric decrypt
+function decryptCrypt(crypt, privkey) {
     var options = {
         message: pgp.message.readArmored(crypt),            // parse armored message
         // publicKeys: pgp.key.readArmored(pubkey).keys,    // of cryptor for verification (optional)
@@ -85,7 +137,7 @@ function decrypt_crypt(crypt, privkey) {
     });
 }
 
-function find_pubkey_server(server, email) {
+function findPubkeyServer(server, email) {
     var hkp = new pgp.HKP(server);
      
     var options = {
@@ -97,8 +149,9 @@ function find_pubkey_server(server, email) {
     });
 }
 
+// instead of storing everyone's pubkeys / privkeys in the store, keep online
 // NOTE: NOT FUNCTIONAL
-function store_pubkey_server(server, pubkey, email) {
+function storePubkeyServer(server, pubkey, email) {
     var hkp = new pgp.HKP(server);
      
     hkp.upload(pubkey).then(function() {
@@ -108,11 +161,11 @@ function store_pubkey_server(server, pubkey, email) {
 
 // when someone requires this module
 module.exports = {
-    hash_password: hash_password,
-    generate_keys: generate_keys,
-    generate_user_keys: generate_user_keys,
-    encrypt_secret: encrypt_secret,
-    decrypt_crypt: decrypt_crypt,
+    hashPassword: hashPassword,
+    generateKeys: generateKeys,
+    generateUserKeys: generateUserKeys,
+    encryptSecret: encryptSecret,
+    decryptCrypt: decryptCrypt,
     
 };
 

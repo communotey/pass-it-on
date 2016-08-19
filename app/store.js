@@ -17,7 +17,8 @@
     
     store.close()
     
-    NOTE:   open(fileLocation)  before making changes to `store.data`.
+    NOTE:   open(fileLocation)  before making changes to `store.data`, open a file.
+                                If no fileLocation is provided, it opens the default location.
             write()             to write the current `store.data` to the file.
             close()             to write & close the file.
 */
@@ -26,6 +27,7 @@ const fs = require('fs');
 const Promise = require('promise');
 
 const FILE_ENCODING = 'utf-8'; // file encoding to use when reading/writing.
+const DEFAULT_FILE_LOCATION = 'store.json'; // file location used when no other is provided.
 
 /*
     This object holds data about the currently open file.
@@ -99,7 +101,7 @@ function isOpen() {
     Opens a file and reads it it's content as JSON.
     Opening a file will fail if there is one open already.
     
-    @param {String} fileLocation
+    @param {String} [fileLocation]
         Location of file which should be opened.
         
     @throws {Error}
@@ -108,6 +110,7 @@ function isOpen() {
     @return {Promise}
 */
 function open(fileLocation) {
+    if(!fileLocation) fileLocation = DEFAULT_FILE_LOCATION;
     if(isOpen()) {
         throw new Error('File already open, close that one first.');
     } else {
