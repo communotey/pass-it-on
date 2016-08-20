@@ -1,47 +1,56 @@
-
-// admin
-function createUser(name) {
+function createAdmin() {
     
-    var user = generateUserKeys();
+    var password;  // TODO: immediately ask for user password
+    var user = generateAdminKeys(password);
     
-    store.data.users[name].salt = user.salt;
-    store.data.users[name].groups = [];
+    // encrypt user pubkey with fernet
+    store.data.users[name].pubkey = user.pubkey;
     
-    // user privkey encrypted with fernet
+    // encrypt user privkey with fernet
     store.data.users[name].privkey = user.privkey;
     
-    if name === 'admin' {
-        // TODO: encrypt user pubkey with fernet
-        // TODO: immediately ask for user password
-        // changePassword('admin', user.password, /* input */)
-    }
-    else {
-        // TODO: encrypt user pubkey with admin pubkey
-        store.data.users[name].pubkey = user.pubkey;
-        
+    store.data.users[name].salt = user.salt;
+    // no groups array for admin
+    
+}
+
+
+// admin
+// adminPub: current user's public key
+function createUser(adminPub, name) {
+    
+    var user = generateUserKeys()
+    
+    // encrypt user pubkey with admin pubkey
+    store.data.users[name].pubkey = encryptSecret(adminPub, user.pubkey);
         
     // TODO: print password
     // TODO: "The following is the temporary password of the new user. Please put this in a safe place, and do not lose it, until you have given it to the person."
-    }
+    
+    // encrypt user privkey with fernet
+    store.data.users[name].privkey = user.privkey;
+    
+    store.data.users[name].salt = user.salt;
+    store.data.users[name].groups = [];
 
 }
 
 
 // admin
 // adminPriv: current user's private key (not the user being added)
-function addUserToGroup(adminPriv, username, groupName) {
+function addUserToGroup(adminPriv, username, group) {
     
     // get user pubkey to get group's pubkey
     var pubkey = decryptCrypt(store.data.users[username].pubkey, adminPriv);
     
     // get group privkey
-    var privkey = decryptCrypt(store.data.groups[groupName].users.admin, adminPriv);
+    var privkey = decryptCrypt(store.data.groups[group].users.admin, adminPriv);
     
     // encrypt privkey with user pubkey
     var crypt = encryptSecret(privkey, pubkey);
     
-    store.data.groups[groupName].users[username] = crypt;
-    store.data.users[username].groups += groupName;
+    store.data.groups[group].users[username] = crypt;
+    store.data.users[username].groups += group;
     
 }
 
@@ -86,7 +95,9 @@ function changePassword(user, currentPassword, newPassword) {
 
 // name: of secret
 // value: of secret
-function addSecretToGroup(group, name, value, pubkey) {
+function addSecretToGroup(uPriv, group, name, value) {
+    
+    // TODO: get group pubkey using uPriv
     
     // creator of group can add people
     // creator of group adds admin
@@ -99,7 +110,7 @@ function addSecretToGroup(group, name, value, pubkey) {
 function getGroups(group, groups) {
     //TODO: get groups in groups into 1D array
     
-    if (obj[group].groups_composed != []) {
+    if (store.data.groups[group].groups != []) {
         
         var fn = function nextLevelRecursion(v){ // sample async action
             // return new Promise(resolve => setTimeout(() => resolve(v * 2), 100));
@@ -107,7 +118,7 @@ function getGroups(group, groups) {
         };
         // map over forEach since it returns
         
-        var actions = obj[groups].groups_composed.map(fn); // run the function over all items.
+        var actions = store.data.groups[groups].groups.map(fn); // run the function over all items.
         
         // we now have a promises array and we want to wait for it
         
@@ -144,22 +155,76 @@ function getGroupList(user) {
     return groups;
 }
 
-
-function deleteSecret(secret) {
-    delete store.data.secrets[secret];
+function deleteSecretLoop(group, secret) {
+    if store.data.groups[group].secrets[secret] {
+        delete store.data.groups[group].secrets[secret];
+    }
 }
 
-function decryptUserPrivate(user, password) {
-    store.data.users[user].private;
+function deleteSecret(secret) {
+    delete store.data.secrets[item];
+    
+    // delete wherever else the item is located
+    // delete store.data.groups.*.secrets[secret]
+    
+    var fn = function noMoreSecrets(v){ // sample async action
+      return new Promise(resolve => setTimeout(() => resolve(deleteSecretLoop(v, secret), 100));
+    };
+    // map over forEach since it returns
+    
+    var actions = store.data.groups.map(noMoreSecrets); // run the function over all items.
+    
+    // we now have a promises array and we want to wait for it
+    
+    var results = Promise.all(actions); // pass array of promises
+    
+    results.then(data => // or just .then(console.log)
+      // I don't think we're waiting for something to happen
+    );
     
 }
 
+function deleteUserLoop(group, user) {
+    delete store.data.groups[group].users.read[user];
+
+}
+
+function deleteUser(user) {
+    
+    // for each in store.data.users[item].groups, delete user key from store.data.groups.group
+    
+    // delete store.data.groups.*.secrets[secret]
+    
+    var fn = function noMoreUser(v){ // sample async action
+      return new Promise(resolve => setTimeout(() => resolve(deleteUserLoop(v, user), 100));
+    };
+    // map over forEach since it returns
+    
+    var actions = store.data.users[user].groups.map(noMoreUser); // run the function over all items.
+    
+    // we now have a promises array and we want to wait for it
+    
+    var results = Promise.all(actions); // pass array of promises
+    
+    results.then(data => // or just .then(console.log)
+      // I don't think we're waiting for something to happen
+    );
+    
+    delete store.data.users[user];
+}
+
+function decryptUserPrivate(user, password) {
+    return decryptKeysSym(store.data.users[user].private, password, store.data.users[user].salt)
+}
+
 function decryptAdminKeys(password) {
-    store.data.users.admin.public
-    store.data.users.admin.private
+    
+    var pubkey = decryptKeysSym(store.data.users.admin.public, password, store.data.users.admin.salt)
+    var privkey = decryptKeysSym(store.data.users.admin.private, password, store.data.users.admin.salt)
+    
     var keys = {
-        privkey: "private",
-        pubkey: "public"
+        privkey: privkey,
+        pubkey: pubkey
     };
     return keys;
 }

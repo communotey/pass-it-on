@@ -51,66 +51,71 @@ if (option === 'init') {
   store.data.secrets = {};
   store.close();
   
-  // TODO: generate admin user
+  // generate admin user
+  createAdmin();
   
 }
 
 if (user === 'admin') {
   var keys = operations.decrypt_admin_keys(password);
+  var privkey = keys.privkey;
+  var pubkey = keys.pubkey;
   switch (option) {
     case 'g':
       // add group
-      // item: name of group
+      // group: name of group
       // store.data.groups[item] = {};
       break;
     case 's':
       // add secret to group
-      // item: name of group
+      // group: name of group
+      // item: name of secret
       // value: secret
+      operations.addSecretToGroup(privkey, group, item, value)
       break;
     case 'd':
       // delete group
-      // item: name of group
-      // delete store.data.groups[item];
+      // group: name of group
+      // delete store.data.groups[group];
       break;
     case 'e':
       // erase secret
       // item: name of secret
-      // delete store.data.secrets[item];
-      // TODO: delete wherever 
+      operations.deleteSecret(item);
       break;
     case 'n':
       // new user
       // item: name of user
-      // value: temporary password
+      operations.createUser(pubkey, item)
       break;
     case 'r':
       // remove user
       // item: name of user
-      // for each in store.data.users[item].groups, delete user key from store.data.groups.group
-      // delete store.data.users[item];
-      // TODO: delete user from groups 
-      
-    // TODO: change password
+      operations.deleteUser(item);
+      break;
+    case 'c':
+      // change password
+      // value: new password
+      operations.changePassword(user, password, value)
   }
 }
 else {
   groups = store.getGroupList(user);
   // TODO: unlock private key
-  var privkey;
+  var privkey = decryptUserPrivate(user, password);
   switch (option) {
     case 'a':
       // add / modify secret to associated group
       // item: name of secret
       // value: secret
-      // TODO: which group?
+      // group: name of group
       
       // if secret exists, make key pair
       break;
     case 'd':
       // delete accessible secrets
       // item: which secret
-      // operations.deleteSecret(item)
+      operations.deleteSecret(item)
       break;
     case 'l':
       // list accessible secrets
@@ -121,10 +126,11 @@ else {
     case 'f':
       // fetch specific accessible secret
       // item: name of secret
+      break;
     case 'c':
       // change password
       // item: new password
-      // operations.changePassword(user, password, item)
+      operations.changePassword(user, password, item)
       
       // relock private key
     // TODO: if password starts with "t_", change it, i.e. temp password
