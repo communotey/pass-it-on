@@ -41,44 +41,86 @@ function createUser(adminPub, name) {
 function addUserToGroup(adminPriv, username, group) {
     
     // get user pubkey to get group's pubkey
-    var pubkey = decryptCrypt(store.data.users[username].pubkey, adminPriv);
+    var pubkey = decryptCryptSym(store.data.users[username].pubkey, adminPriv, store.data.users[username].salt);
     
     // get group privkey
-    var privkey = decryptCrypt(store.data.groups[group].users.admin, adminPriv);
+    var privkey = decryptCrypt(store.data.groups[group].users.read.admin, adminPriv);
     
     // encrypt privkey with user pubkey
     var crypt = encryptSecret(privkey, pubkey);
     
-    store.data.groups[group].users[username] = crypt;
+    store.data.groups[group].users.read[username] = crypt;
     store.data.users[username].groups += group;
     
 }
 
 // admin
-function addGroupToGroup(childName, parentName, pubkey, password) {
-    // TODO: get group private key
-    // TODO: encrypt privkey with group pubkey
-    groups[parentName].users[username] = crypt
-    groups[childName].groups += parentName
+function addGroupToGroup(adminPrivkey, childName, parentName, password) {
+    // get child pubkey
+    var pubkey = decryptCrypt(store.data.groups[childname].write.admin, adminPrivkey);
+    
+    // get parent privkey
+    var privkey = decryptCrypt(store.data.groups[parentName].read.admin, adminPrivkey);
+    
+    // encrypt parent privkey with child pubkey
+    var crypt = encryptSecret(privkey, pubkey);
+    
+    store.data.groups[parentName].users.read[childName] = crypt;
+    store.data.groups[childName].groups += parentName;
     
 }
 
 // admin
 function changeGroupKeys(adminPrivkey) {
-    // recrypt all group keys with new privkey
-    // recrypt all group secrets with group privkey
+    // TODO: decrypt all group keys with new privkey
+    // TODO: recrypt all group keys with new privkey
+    // TODO: decrypt all group secrets with group privkey
+    // TODO: recrypt all group secrets with group privkey
 }
 
 // admin
-function changeSecret(groupPrivkey, value) {
-    // recrypt with new value using group private key
-}
-
-
-// admin
-function createGroup(name, pubkey) {
-    store.data.groups[name] = {};
+function changeSecret(user, uPriv, group, secretName, value) {
     
+    var privkey = crypto.decryptCrypt(store.data.groups[group].read[user], uPriv)
+    
+    // decrypt passphrase with group private key
+    var passphrase = crypto.decryptCrypt(store.data.groups[group].secrets[secretName], privkey);
+    
+    var salt = store.data.groups[group].salt;
+    
+    // crypt new value using same passphrase
+    var crypt = crypto.encryptSecretSym(value, passphrase, salt);
+    
+    // store value
+    store.data.secrets[secretName] = crypt;
+}
+
+// admin
+function changeSecretPassphrase(user, uPriv, group, secretName) {
+    
+    var salt = store.data.groups[group].salt;
+    
+    // TODO: decrypt secret
+    // TODO: generate passphrase
+    
+    // recrypt secret with new passphrase
+    var crypt = crypto.encryptSecretSym(secret, passphrase, salt);
+    
+    // store new values
+    store.data.groups[group].secrets[secretName] = passphraseCrypt;
+    store.data.secrets[secretName] = crypt;
+}
+
+
+// admin
+function createGroup(adminPubkey, name, pubkey) {
+    store.data.groups[name] = {};
+    store.data.groups[name].groups = [];
+    
+    // generate pubkey, privkey
+    var keys = crypto.generateKeys();
+    store.data.groups[name].write.admin = encryptSecret(keys.pubkey, adminPubkey);
+    store.data.groups[name].read.admin = encryptSecret(keys.privkey, adminPubkey);
 }
 
 
@@ -86,18 +128,19 @@ function createGroup(name, pubkey) {
 function changePassword(user, currentPassword, newPassword) {
     
     // decrypt private key
-    var secret = decryptKeysSym(store.data.users[user].privkey, currentPassword, store.data.users[user].salt);
+    var secret = decryptCryptSym(store.data.users[user].privkey, currentPassword, store.data.users[user].salt);
     
     // recrypt private key
-    encryptKeysSym(secret, newPassword, store.data.users[user].salt);
+    encryptSecretSym(secret, newPassword, store.data.users[user].salt);
 }
 
 
 // name: of secret
 // value: of secret
-function addSecretToGroup(uPriv, group, name, value) {
+function addSecretToGroup(user, uPriv, group, name, value) {
     
-    // TODO: get group pubkey using uPriv
+    // get group pubkey using uPriv
+    var pubkey = crypto.decryptCrypt(store.data.groups[group].users.write[user], uPriv);
     
     // creator of group can add people
     // creator of group adds admin
@@ -214,13 +257,13 @@ function deleteUser(user) {
 }
 
 function decryptUserPrivate(user, password) {
-    return decryptKeysSym(store.data.users[user].private, password, store.data.users[user].salt)
+    return decryptCryptSym(store.data.users[user].private, password, store.data.users[user].salt)
 }
 
 function decryptAdminKeys(password) {
     
-    var pubkey = decryptKeysSym(store.data.users.admin.public, password, store.data.users.admin.salt)
-    var privkey = decryptKeysSym(store.data.users.admin.private, password, store.data.users.admin.salt)
+    var pubkey = decryptCryptSym(store.data.users.admin.public, password, store.data.users.admin.salt)
+    var privkey = decryptCryptSym(store.data.users.admin.private, password, store.data.users.admin.salt)
     
     var keys = {
         privkey: privkey,

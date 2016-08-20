@@ -16,12 +16,13 @@
 	"groups": {
 		"team_instinct": {
 			"groups": ["go_players"],
-			"pubkey": "group_public_key_encrypted_by_admin_public_key",
 			"secrets": {
-				"secret1": "passphrase_encrypted_by_group_private_key",
+				"secret1": "passphrase_encrypted_by_group_public_key",
 			},
+			"salt": "store_salt_here",
 			"users": {
 				read: {
+					"admin": "group_private_key_decrypted_with_admin_private_key",
 					"user1": "group_private_key_decrypted_with_user_private_key"
 				},
 				write: {

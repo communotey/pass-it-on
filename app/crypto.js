@@ -51,7 +51,7 @@ function generateKeys() {
 
 
 // symmetric encryption using fernet
-function encryptKeysSym(secret, passphrase, salt) {
+function encryptSecretSym(secret, passphrase, salt) {
 
     // generate hash with password+salt
     var token = hashPassword(passphrase, salt);
@@ -61,7 +61,7 @@ function encryptKeysSym(secret, passphrase, salt) {
 }
 
 // symmetric decryption using fernet
-function decryptKeysSym(crypt, passphrase, salt) {
+function decryptCryptSym(crypt, passphrase, salt) {
     
     // generate hash with password+salt
     var token = hashPassword(passphrase, salt);
@@ -78,8 +78,8 @@ function generateAdminKeys(password) {
     // generate random salt
     var salt = crypto.randomBytes(16);
     
-    var privkey = encryptKeysSym(keys.privkey, password, salt);
-    var pubkey = encryptKeysSym(keys.pubkey, password, salt);
+    var privkey = encryptSecretSym(keys.privkey, password, salt);
+    var pubkey = encryptSecretSym(keys.pubkey, password, salt);
     
     var user = {
         privkey: privkey,
@@ -102,7 +102,7 @@ function generateUserKeys() {
     // generate random salt
     var salt = crypto.randomBytes(16);
     
-    var privkey = encryptKeysSym(keys.privkey, password, salt);
+    var privkey = encryptSecretSym(keys.privkey, password, salt);
     
     var user = {
         privkey: privkey,
