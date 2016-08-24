@@ -1,3 +1,6 @@
+const security = require('./security');
+const KeyPair = require('./KeyPair');
+
 function createAdmin() {
     
     var password;  // TODO: immediately ask for user password
@@ -41,7 +44,7 @@ function createUser(adminPub, name) {
 function addUserToGroup(adminPriv, username, group) {
     
     // get user pubkey to get group's pubkey
-    var pubkey = decryptCryptSym(store.data.users[username].pubkey, adminPriv, store.data.users[username].salt);
+    var pubkey = decryptHashedCryptSym(store.data.users[username].pubkey, adminPriv, store.data.users[username].salt);
     
     // get group privkey
     var privkey = decryptCrypt(store.data.groups[group].users.read.admin, adminPriv);
@@ -70,41 +73,88 @@ function addGroupToGroup(adminPrivkey, childName, parentName, password) {
     
 }
 
+
 // admin
-function changeGroupKeys(adminPrivkey) {
-    // TODO: decrypt all group keys with new privkey
-    // TODO: recrypt all group keys with new privkey
-    // TODO: decrypt all group secrets with group privkey
-    // TODO: recrypt all group secrets with group privkey
+function changeGroupKeys(adminPrivkey, group) {
+    store.open();
+    
+    var groupData = store.data.groups[group];
+    
+    var keys = security.generateKeys()
+    var newPrivKey = keys.privkey;
+    var newPubKey = keys.pubkey;
+    
+    // decrypt all group keys with admin privkey
+    var groupPrivKey = security.decryptCrypt(store.data.groups[group].read.admin, adminPrivkey);
+    var groupPubKey = security.decryptCrypt(store.data.groups[group].write.admin, adminPrivkey);
+
+    var decryptedGroupKeys = [];
+    var recryptedGroupKeys = [];
+    var decryptedGroupSecrets = [];
+    var recryptedGroupSecrets = [];
+    
+    
+    // crypt should be the read/write keys for the group
+    
+    var kp = new KeyPair(groupData.write., groupData.read.);
+    
+    var decryptedGroupKey = security.decryptCrypt(store.data.groups[group]., adminPrivKey);
+    decryptedGroupKeys.push(decryptedGroupKey);
+    
+    // recrypt all group keys with new pubkey
+    for(var i = 0; i < decryptedGroupKey.length; i++) {
+        var recryptedGroupKey = security.encryptSecret(decryptedGroupKeys[i], newPubKey);
+        recryptedGroupKeys.push(recryptedGroupKey);
+    }
+    
+    // decrypt all group secrets with group privkey
+    for(var i = 0; i < decryptedGroupSecrets.length; i++) {
+        var decryptedGroupSecret = security.decryptCrypt(crypt, groupPrivKey);
+        decryptedGroupSecrets.push(decryptedGroupSecret);
+    }
+    
+    // recrypt all group secrets with group pubkey
+    for(var i = 0; i < decryptedGroupSecrets.length; i++) {
+        var decryptedGroupSecret = security.encryptSecret(decryptedGroupSecrets[i], groupPubKey);
+        recryptedGroupSecrets.push(decryptedGroupSecret);
+    }
 }
 
 // admin
 function changeSecret(user, uPriv, group, secretName, value) {
     
-    var privkey = crypto.decryptCrypt(store.data.groups[group].read[user], uPriv)
+    var privkey = security.decryptCrypt(store.data.groups[group].read[user], uPriv)
     
     // decrypt passphrase with group private key
-    var passphrase = crypto.decryptCrypt(store.data.groups[group].secrets[secretName], privkey);
+    var passphrase = security.decryptCrypt(store.data.groups[group].secrets[secretName], privkey);
     
     var salt = store.data.groups[group].salt;
     
     // crypt new value using same passphrase
-    var crypt = crypto.encryptSecretSym(value, passphrase, salt);
+    var crypt = security.encryptHashedSecretSym(value, passphrase, salt);
     
     // store value
     store.data.secrets[secretName] = crypt;
 }
 
 // admin
+// Kemal is currently editing
 function changeSecretPassphrase(user, uPriv, group, secretName) {
     
-    var salt = store.data.groups[group].salt;
+    // get group privates
+    var privkey = decryptCrypt(store.data.groups[group].users.read[user], uPriv);
     
-    // TODO: decrypt secret
-    // TODO: generate passphrase
+    // get group passphrase
+    var passOld = decryptCrypt(store.data.groups[group].secrets[secretName], privkey);
+    
+    // decrypt secret
+    var secret = decryptCryptSym(store.data.secrets[secretName], passOld)
+    
+    // generate passphrase
+    var pass = security.generatePassphrase();
     
     // recrypt secret with new passphrase
-    var crypt = crypto.encryptSecretSym(secret, passphrase, salt);
+    var crypt = security.encryptSecretSym(secret, passphrase);
     
     // store new values
     store.data.groups[group].secrets[secretName] = passphraseCrypt;
@@ -118,7 +168,7 @@ function createGroup(adminPubkey, name, pubkey) {
     store.data.groups[name].groups = [];
     
     // generate pubkey, privkey
-    var keys = crypto.generateKeys();
+    var keys = security.generateKeys();
     store.data.groups[name].write.admin = encryptSecret(keys.pubkey, adminPubkey);
     store.data.groups[name].read.admin = encryptSecret(keys.privkey, adminPubkey);
 }
@@ -128,10 +178,10 @@ function createGroup(adminPubkey, name, pubkey) {
 function changePassword(user, currentPassword, newPassword) {
     
     // decrypt private key
-    var secret = decryptCryptSym(store.data.users[user].privkey, currentPassword, store.data.users[user].salt);
+    var secret = decryptHashedCryptSym(store.data.users[user].privkey, currentPassword, store.data.users[user].salt);
     
     // recrypt private key
-    encryptSecretSym(secret, newPassword, store.data.users[user].salt);
+    encryptHashedSecretSym(secret, newPassword, store.data.users[user].salt);
 }
 
 
@@ -140,11 +190,11 @@ function changePassword(user, currentPassword, newPassword) {
 function addSecretToGroup(user, uPriv, group, name, value) {
     
     // get group pubkey using uPriv
-    var pubkey = crypto.decryptCrypt(store.data.groups[group].users.write[user], uPriv);
+    var pubkey = security.decryptCrypt(store.data.groups[group].users.write[user], uPriv);
     
     // creator of group can add people
     // creator of group adds admin
-    var cipher = crypto.encrypt_secret(value, pubkey);
+    var cipher = security.encrypt_secret(value, pubkey);
     store.data.groups[group].secrets[name] = cipher;
     store.data.secrets[name] = value;
 }
@@ -180,7 +230,7 @@ function getGroups(group, groups) {
 function getGroupList(user) {
     var groups = store.data.users[user].groups;
     
-    var fn = function get_subgroups(v){ // sample async action
+    var fn = function getSubgroups(v){ // sample async action
         return new Promise(resolve => setTimeout(() => resolve(getGroups(group, groups), 100));
     };
     // map over forEach since it returns
@@ -257,17 +307,56 @@ function deleteUser(user) {
 }
 
 function decryptUserPrivate(user, password) {
-    return decryptCryptSym(store.data.users[user].private, password, store.data.users[user].salt)
+    return decryptHashedCryptSym(store.data.users[user].private, password, store.data.users[user].salt)
 }
 
 function decryptAdminKeys(password) {
     
-    var pubkey = decryptCryptSym(store.data.users.admin.public, password, store.data.users.admin.salt)
-    var privkey = decryptCryptSym(store.data.users.admin.private, password, store.data.users.admin.salt)
+    var pubkey = decryptHashedCryptSym(store.data.users.admin.public, password, store.data.users.admin.salt)
+    var privkey = decryptHashedCryptSym(store.data.users.admin.private, password, store.data.users.admin.salt)
     
     var keys = {
         privkey: privkey,
         pubkey: pubkey
     };
     return keys;
+}
+
+function SecretNotFoundError(message) {
+    this.name = "SecretNotFoundError";
+    this.message = (("Secret, " + message + ", not found or not available to specified user.") || "");
+}
+SecretNotFoundError.prototype = Error.prototype;
+
+// get value of a secret available to user
+function fetchSecret(user, secretName) {
+    var secret;
+    // TODO: if secret isn't in group, try going deeper into recursion
+    if ("bob" === secretName) {
+        // really, the secret
+    }
+    // TODO: if it doesn't find it, it ends, else it goes up recursion tree
+    // TODO: as you return from the recursion, decrypt
+    return secret;
+    throw SecretNotFoundError(secretName);// if not found, return error message
+}
+
+// use DFS to find secret
+function recurseCheckGroups(group) {
+    
+}
+
+// get names of ALL secrets available to a user
+function fetchSecrets(user) {
+    // get keys from groups in groups
+    var groups = getGroupList(user);
+    var secrets = []
+    
+    var fn = function tellMeYourSecrets(scientist){
+        secrets.concat(store.data.groups[scientist].secrets.keys);
+    };
+    groups.forEach(tellMeYourSecrets);
+    
+    return secrets;
+    
 }

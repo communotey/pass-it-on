@@ -1,4 +1,4 @@
-var Promise = require("Promise");
+var Promise = require("promise");
 
 var crypto = require("crypto");
 var fernet = require("fernet");
@@ -7,7 +7,7 @@ var pgp = require("openpgp");
 // var keybase = require("kbpgp");
 // var keybase-usr = require("keybase-user");
 
-var bignum = require('bignum');
+// var bignum = require('bignum');
 var b64 = require('base64url');
 
 pgp.initWorker({ path:'openpgp.worker.js' });
@@ -49,9 +49,40 @@ function generateKeys() {
     return keys
 }
 
+// non-hashed symmetric key generation
+// when a non-user-generated key is needed
+function generatePassphrase() {
+    var bytes = crypto.randomBytes(32);
+    var passphrase = b64.encode(bytes, {encoding: "utf8"});
+    return passphrase;
+}
 
-// symmetric encryption using fernet
-function encryptSecretSym(secret, passphrase, salt) {
+// encrypt with non-hashed symmetric encryption
+// when a non-user-generated key is needed
+function encryptSecretSym(secret, passphrase) {
+    var phrase = new fernet.Secret(passphrase);
+    
+    var token = new fernet.Token({
+        secret: phrase,
+    });
+    // fernet encrypt
+    return token.encode(secret);
+    
+}
+
+function decryptCryptSym(crypt, passphrase) {{
+    var phrase = new fernet.Secret(passphrase);
+    
+    var token = new fernet.Token({
+        secret: phrase,
+    });
+    // fernet decrypt
+    return token.decode(crypt);
+
+}
+
+// symmetric encryption using fernet, using hashed password
+function encryptHashedSecretSym(secret, passphrase, salt) {
 
     // generate hash with password+salt
     var token = hashPassword(passphrase, salt);
@@ -60,8 +91,8 @@ function encryptSecretSym(secret, passphrase, salt) {
     return token.encode(secret);
 }
 
-// symmetric decryption using fernet
-function decryptCryptSym(crypt, passphrase, salt) {
+// symmetric decryption using fernet, using hashed password
+function decryptHashedCryptSym(crypt, passphrase, salt) {
     
     // generate hash with password+salt
     var token = hashPassword(passphrase, salt);
@@ -78,8 +109,8 @@ function generateAdminKeys(password) {
     // generate random salt
     var salt = crypto.randomBytes(16);
     
-    var privkey = encryptSecretSym(keys.privkey, password, salt);
-    var pubkey = encryptSecretSym(keys.pubkey, password, salt);
+    var privkey = encryptHashedSecretSym(keys.privkey, password, salt);
+    var pubkey = encryptHashedSecretSym(keys.pubkey, password, salt);
     
     var user = {
         privkey: privkey,
@@ -102,7 +133,7 @@ function generateUserKeys() {
     // generate random salt
     var salt = crypto.randomBytes(16);
     
-    var privkey = encryptSecretSym(keys.privkey, password, salt);
+    var privkey = encryptHashedSecretSym(keys.privkey, password, salt);
     
     var user = {
         privkey: privkey,
@@ -124,12 +155,12 @@ function encryptSecret(secret, pubkey) {
         return ciphertext.data; // '-----BEGIN PGP MESSAGE ... END PGP MESSAGE-----' 
     });
 }
+
 // assymetric decrypt
 function decryptCrypt(crypt, privkey) {
     var options = {
         message: pgp.message.readArmored(crypt),            // parse armored message
-        // publicKeys: pgp.key.readArmored(pubkey).keys,    // of cryptor for verification (optional)
-        privateKey: pgp.key.readArmored(privkey).keys[0]    // for decryption 
+        // publicKeys: pgp.key.readArmored(vkey).keys[0]    // for decryption 
     };
      
     pgp.decrypt(options).then(function(plaintext) {
