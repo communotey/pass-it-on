@@ -329,21 +329,69 @@ function SecretNotFoundError(message) {
 SecretNotFoundError.prototype = Error.prototype;
 
 // get value of a secret available to user
-function fetchSecret(user, secretName) {
-    var secret;
-    // TODO: if secret isn't in group, try going deeper into recursion
-    if ("bob" === secretName) {
-        // really, the secret
-    }
-    // TODO: if it doesn't find it, it ends, else it goes up recursion tree
-    // TODO: as you return from the recursion, decrypt
-    return secret;
-    throw SecretNotFoundError(secretName);// if not found, return error message
-}
+function fetchSecret(userPriv, user, secretName) {
 
-// use DFS to find secret
-function recurseCheckGroups(group) {
+    function found(node) {
+        if (store.groups[node].secrets[secretName]) {
+            return true;
+        }
+        else {
+            return false;
+        }
     
+        // if (!node.visited) {
+        //     node.visited = true;
+        //     nodeStack.push(node);
+        // }
+    
+        // return matches(node.data);
+    }
+    
+    function loopGroups(group) {
+        // group is parent
+        // push all groups under that parent
+        var groupArr = store.data.groups[group].groups;
+        nodeStack.push(groupArr);
+        for(int i = 0; i< groupArr.length; i++) {
+            pathStack.push(groupArr[i]);
+            if (found(groupArr[i])) {             // is it part of the group?
+                return true;
+            }
+            else if (loopGroups(groupArr[i])) {   // is it part of subgroups?
+                return true;
+            }
+            else {
+                pathStack.pop();
+            }
+        }
+        nodeStack.pop();
+        return false;
+    }
+    
+    var nodeStack = [];
+    nodeStack[0] = [];  // each element represents a dimension
+    var groupArr = store.data.users[user].groups;
+    nodeStack[0].concat(groupArr);  // groups need to check
+    var pathStack = []; // groups needed to obtain secret
+    
+    for(int i = 0; i< groupArr.length; i++) {
+        pathStack.push(groupArr[i]);
+        if (found(groupArr[i])) {             // is it part of the group?
+            break;
+        }
+        else if (loopGroups(groupArr[i])) {   // is it part of subgroups?
+            break;
+        }
+        else {
+            pathStack.pop();
+        }
+    }
+    if (pathStack === []) {
+        throw SecretNotFoundError(secretName);  // if not found, return error message
+    }
+    else {
+        return pathStack;
+    }
 }
 
 // get names of ALL secrets available to a user
