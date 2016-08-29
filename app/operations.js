@@ -138,7 +138,6 @@ function changeSecret(user, uPriv, group, secretName, value) {
 }
 
 // admin
-// Kemal is currently editing
 function changeSecretPassphrase(user, uPriv, group, secretName) {
     
     // get group privates
@@ -310,6 +309,11 @@ function decryptUserPrivate(user, password) {
     return decryptHashedCryptSym(store.data.users[user].private, password, store.data.users[user].salt)
 }
 
+function exportSecret(name, value) {
+    console.log("edit me Haris")
+}
+
+
 function decryptAdminKeys(password) {
     
     var pubkey = decryptHashedCryptSym(store.data.users.admin.public, password, store.data.users.admin.salt)
@@ -324,7 +328,12 @@ function decryptAdminKeys(password) {
 
 function SecretNotFoundError(message) {
     this.name = "SecretNotFoundError";
-    this.message = (("Secret, " + message + ", not found or not available to specified user.") || "");
+    if (message != ""){
+        this.message = (("Secret, " + message + ", not found or not available to specified user.") || "");
+    }
+    else {
+        this.message = (("No secrets found or not available to specified user.") || "");
+    }
 }
 SecretNotFoundError.prototype = Error.prototype;
 
@@ -338,13 +347,6 @@ function fetchSecret(userPriv, user, secretName) {
         else {
             return false;
         }
-    
-        // if (!node.visited) {
-        //     node.visited = true;
-        //     nodeStack.push(node);
-        // }
-    
-        // return matches(node.data);
     }
     
     function loopGroups(group) {
@@ -382,20 +384,75 @@ function fetchSecret(userPriv, user, secretName) {
         else if (loopGroups(groupArr[i])) {   // is it part of subgroups?
             break;
         }
-        else {
-            pathStack.pop();
-        }
+        pathStack.pop();
     }
     if (pathStack === []) {
         throw SecretNotFoundError(secretName);  // if not found, return error message
     }
     else {
+        var privkey = userPriv;
+        for (int i = 0; i < pathStack.length; i++) {
+            
+            privkey = security.decryptCrypt(store.data.groups[pathStack[i]].users[user], privkey);
+        }
+        var secret =  security.decryptCryptSym(store.data.secrets[secretName], privkey)
+        exportSecret(secretName, secret)
+    }
+}
+
+function fetchSecrets(userPriv, user) {
+    
+    function loopGroups(group) {
+        // group is parent
+        // push all groups under that parent
+        var groupArr = store.data.groups[group].groups;
+        nodeStack.push(groupArr);
+        for(int i = 0; i< groupArr.length; i++) {
+            pathStack.push(groupArr[i]);
+            // TODO: privStack.push(security.decryptCrypt(store.groups[groupArr[i]].users.read[user], FIX: privStack[groupArr[i-2]]));
+            if (groupArr[i] != []) {    // are there subgroups?
+                loopGroups(groupArr[i])
+            }
+            // TODO: pop secrets onto privStack
+            // for each secret in group, exportSecret(name, value)
+            pathStack.pop();
+            privStack.pop();
+        }
+        nodeStack.pop();
+    }
+    
+    var nodeStack = [];
+    nodeStack[0] = [];  // each element represents a dimension
+    var groupArr = store.data.users[user].groups;
+    nodeStack[0].concat(groupArr);  // groups need to check
+    var pathStack = []; // groups needed to obtain secret
+    var privStack = []; // unlocked private keys of each respective group
+    
+    // TODO: put userpriv onto privStack
+    for(int i = 0; i< groupArr.length; i++) {
+        pathStack.push(groupArr[i]);
+        privStack.push(security.decryptCrypt(store.groups[groupArr[i]].users.read[user], userPriv))
+        
+        if (groupArr[i] != []) {    // are there subgroups?
+            loopGroups(groupArr[i])
+        }
+        // TODO: pop secrets onto privStack
+        // for each secret in group, exportSecret(name, value)
+        pathStack.pop();
+        privStack.pop();
+    }
+    if (pathStack === []) {
+        throw SecretNotFoundError("");  // if not found, return error message
+    }
+    else {
+        // TODO: decryption time!!
         return pathStack;
     }
 }
 
+
 // get names of ALL secrets available to a user
-function fetchSecrets(user) {
+function listSecrets(user) {
     // get keys from groups in groups
     var groups = getGroupList(user);
     var secrets = []

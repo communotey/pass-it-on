@@ -22,7 +22,8 @@
 			"users": {
 				read: {
 					"admin": "group_private_key_decrypted_with_admin_private_key",
-					"user1": "group_private_key_decrypted_with_user_private_key"
+					"user1": "group_private_key_decrypted_with_user_private_key",
+					"group_child": "group_private_key_decrypted_with_child_group_private_key"
 				},
 				write: {
 					"admin": "group_public_key_decrypted_with_admin_private_key"
