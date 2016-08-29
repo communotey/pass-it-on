@@ -403,20 +403,23 @@ function fetchSecret(userPriv, user, secretName) {
 function fetchSecrets(userPriv, user) {
     
     function loopGroups(group) {
-        // group is parent
-        // push all groups under that parent
         var groupArr = store.data.groups[group].groups;
         nodeStack.push(groupArr);
-        for(int i = 0; i< groupArr.length; i++) {
+        for (int i = 0; i< groupArr.length; i++) {
             pathStack.push(groupArr[i]);
-            // TODO: privStack.push(security.decryptCrypt(store.groups[groupArr[i]].users.read[user], FIX: privStack[groupArr[i-2]]));
+            privStack.push(security.decryptCrypt(store.groups[groupArr[i]].users.read[user], privStack[i]));
+            
             if (groupArr[i] != []) {    // are there subgroups?
                 loopGroups(groupArr[i])
             }
-            // TODO: pop secrets onto privStack
-            // for each secret in group, exportSecret(name, value)
+            
             pathStack.pop();
-            privStack.pop();
+            var privkey = privStack.pop();
+            
+            for (var key in store.data.groups.secrets) {
+                var secret = security.decryptCryptSym(store.data.secrets[key], privkey)
+                exportSecret(key, secret)
+            }
         }
         nodeStack.pop();
     }
@@ -428,7 +431,6 @@ function fetchSecrets(userPriv, user) {
     var pathStack = []; // groups needed to obtain secret
     var privStack = []; // unlocked private keys of each respective group
     
-    // TODO: put userpriv onto privStack
     for(int i = 0; i< groupArr.length; i++) {
         pathStack.push(groupArr[i]);
         privStack.push(security.decryptCrypt(store.groups[groupArr[i]].users.read[user], userPriv))
@@ -436,17 +438,16 @@ function fetchSecrets(userPriv, user) {
         if (groupArr[i] != []) {    // are there subgroups?
             loopGroups(groupArr[i])
         }
-        // TODO: pop secrets onto privStack
-        // for each secret in group, exportSecret(name, value)
         pathStack.pop();
-        privStack.pop();
+        var privkey = privStack.pop();
+        
+        for (var key in store.data.groups.secrets) {
+            var secret = security.decryptCryptSym(store.data.secrets[key], privkey)
+            exportSecret(key, secret)
+        }
     }
     if (pathStack === []) {
         throw SecretNotFoundError("");  // if not found, return error message
-    }
-    else {
-        // TODO: decryption time!!
-        return pathStack;
     }
 }
 
