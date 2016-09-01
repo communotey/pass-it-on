@@ -95,10 +95,7 @@ function changeGroupKeys(adminPrivkey, group) {
     
     
     // crypt should be the read/write keys for the group
-    
-    var kp = new KeyPair(groupData.write., groupData.read.);
-    
-    var decryptedGroupKey = security.decryptCrypt(store.data.groups[group]., adminPrivKey);
+    var decryptedGroupKey = security.decryptCrypt(store.data.groups[group], adminPrivKey);
     decryptedGroupKeys.push(decryptedGroupKey);
     
     // recrypt all group keys with new pubkey
@@ -310,7 +307,18 @@ function decryptUserPrivate(user, password) {
 }
 
 function exportSecret(name, value) {
-    console.log("edit me Haris")
+    // TODO: @Kemal, look over the following two APIs we could have:
+    //
+    // in a javascript file anywhere
+    //      process.env.secrets.API_KEY
+    //          positive ++++ we can override environment variables via commandline
+    //          negative - occupy the "secrets" namespace only in environmental variables
+    //      global.secrets.API_KEY
+    //          positive ++ you just have to type secrets.API_KEY now
+    //          negative ----- occupy the "secrets" namespace everywhere in the file...
+
+    if(!proces.env.secrets) process.env.secrets = {};
+    process.env.secrets[name] = value;
 }
 
 
