@@ -38,13 +38,13 @@ operations.createAdmin = function createAdmin(password) {
 // adminPub: current user's public key
 operations.createUser = function createUser(adminPub, name) {
     
-    var user = generateUserKeys()
+    var user = security.generateUserKeys()
     
     // encrypt user pubkey with admin pubkey
     store.data.users[name].pubkey = encryptSecret(adminPub, user.pubkey);
-        
-    // TODO: print password
-    // TODO: "The following is the temporary password of the new user. Please put this in a safe place, and do not lose it, until you have given it to the person."
+    
+    console.log("The following is the temporary password of the new user. Please put this in a safe place, and do not lose it, until you have given it to the person.")
+    console.log(user.password)
     
     // encrypt user privkey with fernet
     store.data.users[name].privkey = user.privkey;
@@ -138,18 +138,11 @@ operations.changeGroupKeys = function changeGroupKeys(adminPrivkey, group) {
 // admin
 operations.changeSecret = function changeSecret(user, uPriv, secretName, value) {
     
-    // TODO: fix with fetchSecret-type recursion
-    var group = ""
-    
-    var privkey = security.decryptCrypt(store.data.groups[group].read[user], uPriv)
-    
     // decrypt passphrase with group private key
-    var passphrase = security.decryptCrypt(store.data.groups[group].secrets[secretName], privkey);
-    
-    var salt = store.data.groups[group].salt;
+    var passphrase = fetchSecretPassphrase(uPriv, user, secretName)
     
     // crypt new value using same passphrase
-    var crypt = security.encryptHashedSecretSym(value, passphrase, salt);
+    var crypt = security.encryptSecretSym(value, passphrase);
     
     // store value
     store.data.secrets[secretName] = crypt;
@@ -216,7 +209,7 @@ operations.addSecretToGroup = function addSecretToGroup(user, uPriv, group, name
 
 // recursive function that adds the groups user is part of + groups their group are part of
 operations.getGroups = function getGroups(group, groups) {
-    //TODO: get groups in groups into 1D array
+    // TODO: get groups in groups into 1D array
     
     if (store.data.groups[group].groups != []) {
         
@@ -418,7 +411,16 @@ function SecretNotFoundError(message) {
 SecretNotFoundError.prototype = Error.prototype;
 
 // get value of a secret available to user
-operations.fetchSecet = function fetchSecret(userPriv, user, secretName) {
+operations.fetchSecret = function fetchSecret(userPriv, user, secretName) {
+    var passphrase = fetchSecretPassphrase(user, userPriv, secretName)
+    
+    var secret =  security.decryptCryptSym(store.data.secrets[secretName], privkey)
+    exportSecret(secretName, secret)
+    
+}
+
+// get value of a secret available to user
+operations.fetchSecretPassphrase = function fetchSecretPassphrase (user, userPriv, secretName) {
 
     function found(node) {
         if (store.groups[node].secrets[secretName]) {
@@ -450,7 +452,7 @@ operations.fetchSecet = function fetchSecret(userPriv, user, secretName) {
         return false;
     }
     
-    // TODO: check secret integrity
+    // TODO: check secret integrity by checking public keys
     
     var nodeStack = [];
     nodeStack[0] = [];  // each element represents a dimension
@@ -477,8 +479,7 @@ operations.fetchSecet = function fetchSecret(userPriv, user, secretName) {
             
             privkey = security.decryptCrypt(store.data.groups[pathStack[i]].users.read[user], privkey);
         }
-        var secret =  security.decryptCryptSym(store.data.secrets[secretName], privkey)
-        exportSecret(secretName, secret)
+        return privkey
     }
 }
 
