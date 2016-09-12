@@ -51,44 +51,6 @@ program
   })
   
 program
-  .command('create')
-  .description('Create groups, secrets or users')
-  .option('-g, --group <group>', 'Create a group')
-  .option('-s, --secret <secret>', 'Create a secret')
-  .option('-u, --user <user>', 'Create a user')
-  .action(function (options) {
-    if(options.group) {
-      
-    } else if(options.secret) {
-      
-    } else if(options.user) {
-      
-    }
-  })
-
-program
-  .command('change')
-  .description('Change the value of a secret or a user\'s password')
-  .option('-s, --secret <secret>', '')
-  .option('-p, --password <new-password>', '')
-  .action(function (options) {
-    if(options.secret) {
-      credentials.ask().then(function(username, password) {
-        var uPriv = operations.decryptUserPrivate(username, password)
-        var secretName = operations.secret
-        // TODO TODO TODO TODO TODO TODO TODO
-        // operations.changeSecret(username, uPriv, group, secretName)
-      }, function(error) {
-        
-      })
-    } else if(options.newPassword) {
-      
-    } else {
-      console.log(INCORRECT_OPTIONS_GIVEN)
-    }
-  })
-  
-program
   .command('add')
   .usage('<option> -g|--group <groupParent>')
   .description('Group operations')
@@ -98,7 +60,7 @@ program
   .option('-g, --group <groupParent>', 'Specify the parent group')
   .action(function(options) {
       if(!options.groupParent) {
-        console.log(NO_PARENT_GROUP_GIVEN)
+        console.log(NO_TARGET_GROUP_GIVEN)
         return;
       }
       
@@ -141,6 +103,56 @@ program
         console.log(INCORRECT_OPTIONS_GIVEN)
      }
   })
+  
+program
+  .command('change')
+  .description('Change the value of a secret or a user\'s password')
+  .option('-s, --secret <secret>', '')
+  .option('-p, --password', 'Change a user password (will be prompted to login as that user and select a new password)')
+  .action(function (options) {
+    if(options.secret) {
+      credentials.ask().then(function(username, password) {
+        var uPriv = operations.decryptUserPrivate(username, password)
+        var secretName = operations.secret
+        // TODO TODO TODO TODO TODO TODO TODO
+        // operations.changeSecret(username, uPriv, group, secretName)
+      }, function(error) {
+        
+      })
+    } else if(options.password) {
+      credentials.ask().then(function(username, password) {
+        prompt.get(['new password'], function(error, result) {
+          operations.changePassword(username, password, result['new password'])
+        })
+      }, function(error) {
+        
+      })
+    } else {
+      console.log(INCORRECT_OPTIONS_GIVEN)
+    }
+  })
+  
+program
+  .command('create')
+  .description('Create groups, secrets or users')
+  .option('-g, --group <group>', 'Create a group')
+  .option('-s, --secret <secret>', 'Create a secret')
+  .option('-u, --user <user>', 'Create a user')
+  .action(function (options) {
+    if(options.group) {
+      var name = options.group
+      // TODO
+      // operations.createGroup(adminPubkey, name)
+    } else if(options.secret) {
+      var name = options.secret
+      // TODO
+      // operations.createSecret(adminPubkey, name)
+    } else if(options.user) {
+      var name = options.user
+      // TODO
+      // operations.createUser(adminPub, name)
+    }
+  })
 
 program
   .command('delete')
@@ -150,7 +162,7 @@ program
   .option('-u, --user <user>', 'Delete a user')
   .action(function(options) {
     if(!options.parentGroup) {
-      console.log(NO_PARENT_GROUP_GIVEN)
+      console.log(NO_TARGET_GROUP_GIVEN)
       return;
     }
     
@@ -163,6 +175,8 @@ program
       operations.deleteSecret(options.secret)
     } else if(options.user) {
       operations.deleteUser(options.user)
+    } else {
+      console.log(INCORRECT_OPTIONS_GIVEN)
     }
   })
 
@@ -176,7 +190,7 @@ program
   .option('-g, --group <groupParent>', 'Specify the parent group')
   .action(function(options) {
     if(!options.parentGroup) {
-      console.log(NO_PARENT_GROUP_GIVEN)
+      console.log(NO_TARGET_GROUP_GIVEN)
       return;
     }
     
@@ -188,6 +202,8 @@ program
       operations.removeSecret(options.secret, parentGroup)
     } else if(options.user) {
       operations.removeUser(options.user, parentGroup)
+    } else {
+      console.log(INCORRECT_OPTIONS_GIVEN)
     }
   })
 

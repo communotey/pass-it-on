@@ -190,7 +190,6 @@ operations.createGroup = function createGroup(adminPubkey, name) {
     store.data.groups[name].read.admin = encryptSecret(keys.privkey, adminPubkey);
 }
 
-
 // returns nothing
 operations.changePassword = function changePassword(user, currentPassword, newPassword) {
     
@@ -322,10 +321,19 @@ operations.deleteGroup = function deleteGroup(group) {
         delete store.data.groups[parent].users.read[group]
     }
     
-    // TODO: delete secrets only associated with group
+    
+    // if secret is only from given group, delete it
     for (var secret in store.data.groups[group].secrets) {
-        // check all groups if the secret is there
-        // if secret is there 
+        var multi = false
+        for (var g in store.data.groups) {
+            if (g.secrets.includes(secret) && g != group) {
+                multi = true
+                break
+            }
+        }
+        if (!multi) {
+            delete store.data.secrets[secret]
+        }
     }
     
     // delete group from users
