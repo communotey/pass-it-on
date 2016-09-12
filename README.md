@@ -12,15 +12,35 @@
 **Pass-It-On** is a password manager for:
 
 - Giving password access to multiple users
-  - Uses LABELs or USER GROUPS (i.e. groups of users who can use the same set of passwords)
+  - Uses LABELs or USER GROUPS (i.e. sets of users who can use the same **keys** or **secrets**)
 - Allows you to store your keys in a code repository
 - Automatic retrieval at server start for autoscaling purposes
 
-## User Functions
+## How it works
 
-A user should be able to use pass-it-on as an option when starting their server, for example:
+### Unlocking Group Level Keys
 
-`node app.js --user=goatandsheep --password=SherbetLemon`
+> Encrypting the access keys
+
+- **Add**:
+  - *ADMIN* fetches a public or private key
+  - Encrypts with user's public key
+  - **Append**: `json.item_name = "key_encrypted_by_password"`
+    - Password is salted and hashed using PBKDF2
+      - **Fernet**: encrypts user's private key using hash
+- **Remove**:
+  - `delete json.item_name`
+
+### Unlocking Keys as GROUP
+
+> Accessing the passwords, themselves
+
+Types:
+
+- Read: private key
+- Write: public keys
+
+Locked with **GPG**
 
 ### ADMIN user
 
@@ -38,35 +58,47 @@ A user should be able to use pass-it-on as an option when starting their server,
   - Read passwords
   - Write password
 
-## How it works
+## Usage
 
-### Unlocking Group Level Keys
+Modes:
 
-> Encrypting the access keys
+1. Administration
+2. Injection
 
-- **Add**:
-  - *ADMIN* fetches a public or private key
-  - Encrypts with user's public key
-  - **Append**: `json.item_name = "key_encrypted_by_password"`
-    - Password could be salted
-      - **AES** encrypts user's private key
-- **Remove**:
-  - `delete json.item_name`
+### 1. Administration
 
-### Unlocking Keys as GROUP
+> A mode where you manage the password store
 
-> Accessing the passwords, themselves
+#### Functions:
 
-Types:
+* Initialize store
+* Add user to group
+* Create new group
+* Add keys to group
+* Add / Modify / Delete users
+* Add / Modify / Delete / List keys
+* Change passwords
 
-- Read: private key
-- Write: public keys
+#### Authentication
 
-Locked with **GPG**
+1. Run the application
+2. Enter username and password
+3. Choose options available to that user
 
-## Initialization
+### 2. Injection
 
-1. Admin password is set
+> Run this inside your application and the passwords you have been authorized access to will be injected into the development environment
+
+There are two ways of being authenticated in *injection mode*:
+
+1. Putting your username and password inside `PIO_USER` and `PIO_PASS`, respectively.
+2. Following the prompt.
+
+## Notes to contributors
+
+* Going to start using [this standard](https://github.com/feross/standard/blob/master/README.md) for javascript
+* Promises > callbackss
+
 
 ## Cryptography Notice
 

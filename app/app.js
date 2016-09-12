@@ -1,7 +1,8 @@
 const Promise = require('promise');
 
 const fs = require("fs");
-const cli = require("cli");
+const cli = require("commander");
+const prompt = require("prompt")
 
 const crypto = require('./crypto'); 
 // crypto.generate_private()
@@ -9,7 +10,12 @@ const crypto = require('./crypto');
 const STORE_FILE_LOCATION = 'store.json';
 const store = require('./store');
 
+const operations = require('./operations')
+
 var user, password, location;
+
+// if we cannot fetch user + password from env:
+// prompt
 
 // sample cli inputs --user=goatandsheep password=SherbetLemon
 cli.parse({
@@ -36,7 +42,7 @@ var option; // TODO: get option from cli
 var item; // what does the option affect?
 var value; // value of thing we are affecting
 
-// states
+// States
 // 1. First time
 // 2. check the username and password with json
 // 3. give options based on username
@@ -44,20 +50,9 @@ var value; // value of thing we are affecting
 //    B. Everyone else can 
 
 // 1. First time: setup store.json
-if (option === 'init') {
-  store.open(STORE_FILE_LOCATION);
-  store.data.users = {};
-  store.data.groups = {};
-  store.data.secrets = {};
-  store.close();
-  
-  // generate admin user
-  createAdmin();
-  
-}
 
 if (user === 'admin') {
-  var keys = operations.decrypt_admin_keys(password);
+  var keys = operations.decryptAdminKeys(password);
   var privkey = keys.privkey;
   var pubkey = keys.pubkey;
   switch (option) {
@@ -65,6 +60,7 @@ if (user === 'admin') {
       // add group
       // group: name of group
       // store.data.groups[item] = {};
+      operations.createGroup(pubkey, groupName)
       break;
     case 's':
       // add secret to group
@@ -81,7 +77,7 @@ if (user === 'admin') {
     case 'e':
       // erase secret
       // item: name of secret
-      operations.deleteSecret(item);
+      // operations.deleteSecret(item);
       break;
     case 'n':
       // new user
@@ -91,18 +87,17 @@ if (user === 'admin') {
     case 'r':
       // remove user
       // item: name of user
-      operations.deleteUser(item);
+      // operations.deleteUser(item);
       break;
     case 'c':
       // change password
       // value: new password
       operations.changePassword(user, password, value)
   }
-}
-else {
+} else {
   groups = store.getGroupList(user);
   // TODO: unlock private key
-  var privkey = decryptUserPrivate(user, password);
+  var privkey = operations.decryptUserPrivate(user, password);
   switch (option) {
     case 'a':
       // add / modify secret to associated group

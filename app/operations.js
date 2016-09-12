@@ -1,9 +1,26 @@
 const security = require('./security');
 const KeyPair = require('./KeyPair');
+const store = require('./store')
 
-function createAdmin() {
+var operations = {}
+
+operations.init = function init(password) {
+  // setup store.json
+  store.open();
+  store.data = {
+    users: {},
+    groups: {},
+    secrets: {}
+  };
+  store.close();
+  
+  // generate admin user
+  createAdmin(password);
+}
+
+// password: set the value of the admin password
+operations.createAdmin = function createAdmin(password) {
     
-    var password;  // TODO: immediately ask for user password
     var user = generateAdminKeys(password);
     
     // encrypt user pubkey with fernet
@@ -17,10 +34,9 @@ function createAdmin() {
     
 }
 
-
 // admin
 // adminPub: current user's public key
-function createUser(adminPub, name) {
+operations.createUser = function createUser(adminPub, name) {
     
     var user = generateUserKeys()
     
@@ -38,13 +54,15 @@ function createUser(adminPub, name) {
 
 }
 
-
-// admin
-// adminPriv: current user's private key (not the user being added)
-function addUserToGroup(adminPriv, username, group) {
+/*
+    run by admin only
+    
+    @param {String} adminPriv: current user's private key (not the user being added)
+*/
+operations.addUserToGroup = function addUserToGroup(adminPriv, username, group) {
     
     // get user pubkey to get group's pubkey
-    var pubkey = decryptHashedCryptSym(store.data.users[username].pubkey, adminPriv, store.data.users[username].salt);
+    var pubkey = security.decryptHashedCryptSym(store.data.users[username].pubkey, adminPriv, store.data.users[username].salt);
     
     // get group privkey
     var privkey = decryptCrypt(store.data.groups[group].users.read.admin, adminPriv);
@@ -58,7 +76,7 @@ function addUserToGroup(adminPriv, username, group) {
 }
 
 // admin
-function addGroupToGroup(adminPrivkey, childName, parentName, password) {
+operations.addGroupToGroup = function addGroupToGroup(adminPrivkey, childName, parentName) {
     // get child pubkey
     var pubkey = decryptCrypt(store.data.groups[childname].write.admin, adminPrivkey);
     
@@ -75,7 +93,7 @@ function addGroupToGroup(adminPrivkey, childName, parentName, password) {
 
 
 // admin
-function changeGroupKeys(adminPrivkey, group) {
+operations.changeGroupKeys = function changeGroupKeys(adminPrivkey, group) {
     store.open();
     
     var groupData = store.data.groups[group];
@@ -118,7 +136,10 @@ function changeGroupKeys(adminPrivkey, group) {
 }
 
 // admin
-function changeSecret(user, uPriv, group, secretName, value) {
+operations.changeSecret = function changeSecret(user, uPriv, secretName, value) {
+    
+    // TODO: fix with fetchSecret-type recursion
+    var group = ""
     
     var privkey = security.decryptCrypt(store.data.groups[group].read[user], uPriv)
     
@@ -135,7 +156,7 @@ function changeSecret(user, uPriv, group, secretName, value) {
 }
 
 // admin
-function changeSecretPassphrase(user, uPriv, group, secretName) {
+operations.changeSecretPassphrase = function changeSecretPassphrase(user, uPriv, group, secretName) {
     
     // get group privates
     var privkey = decryptCrypt(store.data.groups[group].users.read[user], uPriv);
@@ -159,7 +180,7 @@ function changeSecretPassphrase(user, uPriv, group, secretName) {
 
 
 // admin
-function createGroup(adminPubkey, name, pubkey) {
+operations.createGroup = function createGroup(adminPubkey, name) {
     store.data.groups[name] = {};
     store.data.groups[name].groups = [];
     
@@ -171,32 +192,31 @@ function createGroup(adminPubkey, name, pubkey) {
 
 
 // returns nothing
-function changePassword(user, currentPassword, newPassword) {
+operations.changePassword = function changePassword(user, currentPassword, newPassword) {
     
     // decrypt private key
-    var secret = decryptHashedCryptSym(store.data.users[user].privkey, currentPassword, store.data.users[user].salt);
+    var secret = security.decryptHashedCryptSym(store.data.users[user].privkey, currentPassword, store.data.users[user].salt);
     
     // recrypt private key
     encryptHashedSecretSym(secret, newPassword, store.data.users[user].salt);
 }
 
-
+/*
 // name: of secret
 // value: of secret
-function addSecretToGroup(user, uPriv, group, name, value) {
+*/
+operations.addSecretToGroup = function addSecretToGroup(user, uPriv, group, name, value) {
     
     // get group pubkey using uPriv
     var pubkey = security.decryptCrypt(store.data.groups[group].users.write[user], uPriv);
     
-    // creator of group can add people
-    // creator of group adds admin
     var cipher = security.encrypt_secret(value, pubkey);
     store.data.groups[group].secrets[name] = cipher;
     store.data.secrets[name] = value;
 }
 
 // recursive function that adds the groups user is part of + groups their group are part of
-function getGroups(group, groups) {
+operations.getGroups = function getGroups(group, groups) {
     //TODO: get groups in groups into 1D array
     
     if (store.data.groups[group].groups != []) {
@@ -223,7 +243,7 @@ function getGroups(group, groups) {
 
 
 // less params. is there overloading in js?
-function getGroupList(user) {
+operations.getGroupList = function getGroupList(user) {
     var groups = store.data.users[user].groups;
     
     var fn = function getSubgroups(v){ // sample async action
@@ -244,13 +264,13 @@ function getGroupList(user) {
     return groups;
 }
 
-function deleteSecretLoop(group, secret) {
+operations.deleteSecretLoop = function deleteSecretLoop(group, secret) {
     if store.data.groups[group].secrets[secret] {
         delete store.data.groups[group].secrets[secret];
     }
 }
 
-function deleteSecret(secret) {
+operations.deleteSecret = function deleteSecret(secret) {
     delete store.data.secrets[item];
     
     // delete wherever else the item is located
@@ -273,12 +293,56 @@ function deleteSecret(secret) {
     
 }
 
+operations.removeSecret = function removeSecret(secret, group) {
+    delete store.data.groups[group].secrets[secret]
+}
+
+operations.removeGroup = function removeGroup(child, parent) {
+    var index = store.data.groups[child].groups.indexOf(parent)
+    if(index !== -1) {
+        store.data.groups[child].groups.splice(index, 1);
+    }
+    
+    delete store.data.groups[parent].users.read[child]
+}
+
+operations.removeUser = function removeUser(user, group) {
+    var index = store.data.users[user].groups.indexOf(group)
+    if(index !== -1) {
+        store.data.users[user].groups.splice(index, 1);
+    }
+    
+    delete store.data.groups[group].users.read[user]
+}
+
+operations.deleteGroup = function deleteGroup(group) {
+    
+    // remove parents' memories of children
+    for (var parent in store.data.groups[group].groups) {
+        delete store.data.groups[parent].users.read[group]
+    }
+    
+    // TODO: delete secrets only associated with group
+    for (var secret in store.data.groups[group].secrets) {
+        // check all groups if the secret is there
+        // if secret is there 
+    }
+    
+    // delete group from users
+    for (var user in store.data.groups[group].users.read) {
+        removeUser(user, group)
+    }
+    
+    // delete group object
+    delete store.data.groups[group]
+}
+
 function deleteUserLoop(group, user) {
     delete store.data.groups[group].users.read[user];
 
 }
 
-function deleteUser(user) {
+operations.deleteUser = function deleteUser(user) {
     
     // for each in store.data.users[item].groups, delete user key from store.data.groups.group
     
@@ -302,11 +366,11 @@ function deleteUser(user) {
     delete store.data.users[user];
 }
 
-function decryptUserPrivate(user, password) {
-    return decryptHashedCryptSym(store.data.users[user].private, password, store.data.users[user].salt)
+operations.decryptUserPrivate = function decryptUserPrivate(user, password) {
+    return security.decryptHashedCryptSym(store.data.users[user].private, password, store.data.users[user].salt)
 }
 
-function exportSecret(name, value) {
+operations.exportSecret = function exportSecret(name, value) {
     // TODO: @Kemal, look over the following two APIs we could have:
     //
     // in a javascript file anywhere
@@ -322,10 +386,10 @@ function exportSecret(name, value) {
 }
 
 
-function decryptAdminKeys(password) {
+operations.decryptAdminKeys = function decryptAdminKeys(password) {
     
-    var pubkey = decryptHashedCryptSym(store.data.users.admin.public, password, store.data.users.admin.salt)
-    var privkey = decryptHashedCryptSym(store.data.users.admin.private, password, store.data.users.admin.salt)
+    var pubkey = security.decryptHashedCryptSym(store.data.users.admin.public, password, store.data.users.admin.salt)
+    var privkey = security.decryptHashedCryptSym(store.data.users.admin.private, password, store.data.users.admin.salt)
     
     var keys = {
         privkey: privkey,
@@ -346,7 +410,7 @@ function SecretNotFoundError(message) {
 SecretNotFoundError.prototype = Error.prototype;
 
 // get value of a secret available to user
-function fetchSecret(userPriv, user, secretName) {
+operations.fetchSecet = function fetchSecret(userPriv, user, secretName) {
 
     function found(node) {
         if (store.groups[node].secrets[secretName]) {
@@ -378,6 +442,8 @@ function fetchSecret(userPriv, user, secretName) {
         return false;
     }
     
+    // TODO: check secret integrity
+    
     var nodeStack = [];
     nodeStack[0] = [];  // each element represents a dimension
     var groupArr = store.data.users[user].groups;
@@ -401,14 +467,14 @@ function fetchSecret(userPriv, user, secretName) {
         var privkey = userPriv;
         for (int i = 0; i < pathStack.length; i++) {
             
-            privkey = security.decryptCrypt(store.data.groups[pathStack[i]].users[user], privkey);
+            privkey = security.decryptCrypt(store.data.groups[pathStack[i]].users.read[user], privkey);
         }
         var secret =  security.decryptCryptSym(store.data.secrets[secretName], privkey)
         exportSecret(secretName, secret)
     }
 }
 
-function fetchSecrets(userPriv, user) {
+operations.fetchSecrets = function fetchSecrets(userPriv, user) {
     
     function loopGroups(group) {
         var groupArr = store.data.groups[group].groups;
@@ -461,7 +527,7 @@ function fetchSecrets(userPriv, user) {
 
 
 // get names of ALL secrets available to a user
-function listSecrets(user) {
+operations.listSecrets = function listSecrets(user) {
     // get keys from groups in groups
     var groups = getGroupList(user);
     var secrets = []
@@ -474,3 +540,5 @@ function listSecrets(user) {
     return secrets;
     
 }
+
+module.exports = operations

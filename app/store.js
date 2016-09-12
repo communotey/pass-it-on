@@ -29,6 +29,8 @@ const Promise = require('promise');
 const FILE_ENCODING = 'utf-8'; // file encoding to use when reading/writing.
 const DEFAULT_FILE_LOCATION = 'store.json'; // file location used when no other is provided.
 
+var store = {}
+
 /*
     This object holds data about the currently open file.
     
@@ -93,11 +95,11 @@ function copyObject(obj, obj2) {
         true if file is open, false otherwise
     @private
 */
-function isOpen() {
+store.isOpen = function isOpen() {
     return file.fileDescriptor !== null;
 }
 
-/*
+/**
     Opens a file and reads it it's content as JSON.
     Opening a file will fail if there is one open already.
     
@@ -109,7 +111,7 @@ function isOpen() {
     
     @return {Promise}
 */
-function open(fileLocation) {
+store.open = function open(fileLocation) {
     if(!fileLocation) fileLocation = DEFAULT_FILE_LOCATION;
     if(isOpen()) {
         throw new Error('File already open, close that one first.');
@@ -139,7 +141,7 @@ function open(fileLocation) {
     }
 }
 
-/*
+/**
     Closes the currently open file.
     
     @throws {Error} 
@@ -147,7 +149,7 @@ function open(fileLocation) {
         
     @return {Promise}
 */
-function close() {
+store.close = function close() {
     return new Promise(function(resolve, reject) {
         if(isOpen()) {
             write().then(function() {
@@ -164,7 +166,7 @@ function close() {
     });
 }
 
-/*
+/**
     Saves current state of the data in the currently open file.
     
     @throws {Error}
@@ -173,7 +175,7 @@ function close() {
     @return {Promise}
         Resolves when data is saved successfully!
 */
-function write() {
+store.write = function write() {
     if(!isOpen()) {
         throw new Error('Tried to write when no file was open.');
     }
@@ -189,10 +191,6 @@ function write() {
     });
 }
 
-module.exports = {
-    data: file.json,
-    open: open,
-    close: close,
-    write: write,
-    isOpen: isOpen
-}
+store.data = file.json
+
+module.exports = store 

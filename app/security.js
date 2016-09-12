@@ -4,6 +4,8 @@ var crypto = require("crypto");
 var fernet = require("fernet");
 var pgp = require("openpgp");
 
+var security = {}
+
 // var keybase = require("kbpgp");
 // var keybase-usr = require("keybase-user");
 
@@ -12,7 +14,7 @@ var b64 = require('base64url');
 
 pgp.initWorker({ path:'openpgp.worker.js' });
 
-function hashPassword(password, salt) {
+security.hashPassword = function hashPassword (password, salt) {
     var pbkdf2Hash = Promise.denodeify(crypto.pbkdf2)
     var derivedKey = pbkdf2Hash(password, salt, 100000, 32, 'sha512');
     var hashed = b64.encode(derivedKey);
@@ -27,7 +29,7 @@ function hashPassword(password, salt) {
 }
 
 
-function generateKeys() {
+security.generateKeys = function generateKeys () {
     // NOTE: yes there is a passphrase that can encrypt the private key, but it's using an outdated standard
     // Hence: we still need the AES thing above for password
     
@@ -51,7 +53,7 @@ function generateKeys() {
 
 // non-hashed symmetric key generation
 // when a non-user-generated key is needed
-function generatePassphrase() {
+security.generatePassphrase = function generatePassphrase() {
     var bytes = crypto.randomBytes(32);
     var passphrase = b64.encode(bytes, {encoding: "utf8"});
     return passphrase;
@@ -59,7 +61,7 @@ function generatePassphrase() {
 
 // encrypt with non-hashed symmetric encryption
 // when a non-user-generated key is needed
-function encryptSecretSym(secret, passphrase) {
+security.encryptSecretSym = function encryptSecretSym(secret, passphrase) {
     var phrase = new fernet.Secret(passphrase);
     
     var token = new fernet.Token({
@@ -70,7 +72,7 @@ function encryptSecretSym(secret, passphrase) {
     
 }
 
-function decryptCryptSym(crypt, passphrase) {{
+security.decryptCryptSym = function decryptCryptSym(crypt, passphrase) {{
     var phrase = new fernet.Secret(passphrase);
     
     var token = new fernet.Token({
@@ -82,7 +84,7 @@ function decryptCryptSym(crypt, passphrase) {{
 }
 
 // symmetric encryption using fernet, using hashed password
-function encryptHashedSecretSym(secret, passphrase, salt) {
+security.encryptHashedSecretSym = function encryptHashedSecretSym(secret, passphrase, salt) {
 
     // generate hash with password+salt
     var token = hashPassword(passphrase, salt);
@@ -92,7 +94,7 @@ function encryptHashedSecretSym(secret, passphrase, salt) {
 }
 
 // symmetric decryption using fernet, using hashed password
-function decryptHashedCryptSym(crypt, passphrase, salt) {
+security.decryptHashedCryptSym = function decryptHashedCryptSym(crypt, passphrase, salt) {
     
     // generate hash with password+salt
     var token = hashPassword(passphrase, salt);
@@ -101,8 +103,8 @@ function decryptHashedCryptSym(crypt, passphrase, salt) {
     return token.decode(crypt);
 }
 
-function generateAdminKeys(password) {
-    
+security.generateAdminKeys = function generateAdminKeys(password) {
+
     // generate user's private key
     var keys = generateKeys()
     
@@ -121,7 +123,7 @@ function generateAdminKeys(password) {
     return user;
 }
 
-function generateUserKeys() {
+security.generateUserKeys = function generateUserKeys() {
     
     // generate temporary password
     var password = crypto.randomBytes(12).toString('hex');
@@ -145,7 +147,7 @@ function generateUserKeys() {
 }
 
 // assymetric encrypt
-function encryptSecret(secret, pubkey) {
+security.encryptSecret = function encryptSecret(secret, pubkey) {
     var options = {
         data: secret,                              // input as String (or Uint8Array) 
         publicKeys: pgp.key.readArmored(pubkey).keys,  // for encryption
@@ -157,7 +159,7 @@ function encryptSecret(secret, pubkey) {
 }
 
 // assymetric decrypt
-function decryptCrypt(crypt, privkey) {
+security.decryptCrypt = function decryptCrypt(crypt, privkey) {
     var options = {
         message: pgp.message.readArmored(crypt),            // parse armored message
         // publicKeys: pgp.key.readArmored(vkey).keys[0]    // for decryption 
@@ -168,7 +170,7 @@ function decryptCrypt(crypt, privkey) {
     });
 }
 
-function findPubkeyServer(server, email) {
+security.findPubkeyServer = function findPubkeyServer(server, email) {
     var hkp = new pgp.HKP(server);
      
     var options = {
@@ -182,7 +184,7 @@ function findPubkeyServer(server, email) {
 
 // instead of storing everyone's pubkeys / privkeys in the store, keep online
 // NOTE: NOT FUNCTIONAL
-function storePubkeyServer(server, pubkey, email) {
+security.storePubkeyServer = function storePubkeyServer(server, pubkey, email) {
     var hkp = new pgp.HKP(server);
      
     hkp.upload(pubkey).then(function() {
@@ -191,14 +193,7 @@ function storePubkeyServer(server, pubkey, email) {
 }
 
 // when someone requires this module
-module.exports = {
-    hashPassword: hashPassword,
-    generateKeys: generateKeys,
-    generateUserKeys: generateUserKeys,
-    encryptSecret: encryptSecret,
-    decryptCrypt: decryptCrypt,
-    
-};
+module.exports = security;
 
 // TODO: a method to access group keys if you already have your private key
 // * Perhaps use it to unlock / lock the user-group key
