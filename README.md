@@ -109,7 +109,10 @@ The U.S. Government Department of Commerce, Bureau of Industry and Security (BIS
 ##TODO
 
 - [ ] fix store.js
-- [ ] test cases
+- [ ] test cases: `npm test` fails 😥
 - [ ] command line commands (`pio.js`)
 - [ ] Teach Kemal how to do config and env variables file
 - [ ] operations: removeSecret, deleteSecret, addSecretToGroup
+- [ ] figure out grouping stuff
+- [ ] make `Auth` version of public-facing functions to auto-decrypt pub/priv keys because operations should be only thing that talks to security
+- [ ] is it ok that `store.json` is ignored?

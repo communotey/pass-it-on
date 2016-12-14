@@ -54,6 +54,13 @@ operations.createUser = function createUser(adminPub, name) {
 
 }
 
+// admin-only, auth version
+operations.createUserAuth = function createUserAuth (adminPassword, name) {
+    
+    var adminPub = decryptCryptSym(store.admin.pubkey, adminPassword)
+    operations.createUser(adminPub, name)
+}
+
 /*
     run by admin only
     
@@ -75,7 +82,7 @@ operations.addUserToGroup = function addUserToGroup(adminPriv, username, group) 
     
 }
 
-// admin
+// admin-only
 operations.addGroupToGroup = function addGroupToGroup(adminPrivkey, childName, parentName) {
     // get child pubkey
     var pubkey = decryptCrypt(store.data.groups[childname].write.admin, adminPrivkey);
@@ -92,7 +99,7 @@ operations.addGroupToGroup = function addGroupToGroup(adminPrivkey, childName, p
 }
 
 
-// admin
+// admin-only
 operations.changeGroupKeys = function changeGroupKeys(adminPrivkey, group) {
     store.open();
     
@@ -135,7 +142,7 @@ operations.changeGroupKeys = function changeGroupKeys(adminPrivkey, group) {
     }
 }
 
-// admin
+// admin-only
 operations.changeSecret = function changeSecret(user, uPriv, secretName, value) {
     
     // decrypt passphrase with group private key
@@ -148,7 +155,7 @@ operations.changeSecret = function changeSecret(user, uPriv, secretName, value) 
     store.data.secrets[secretName] = crypt;
 }
 
-// admin
+// admin-only
 operations.changeSecretPassphrase = function changeSecretPassphrase(user, uPriv, group, secretName) {
     
     // get group privates
@@ -172,7 +179,7 @@ operations.changeSecretPassphrase = function changeSecretPassphrase(user, uPriv,
 }
 
 
-// admin
+// admin-only
 operations.createGroup = function createGroup(adminPubkey, name) {
     store.data.groups[name] = {};
     store.data.groups[name].groups = [];
@@ -181,6 +188,13 @@ operations.createGroup = function createGroup(adminPubkey, name) {
     var keys = security.generateKeys();
     store.data.groups[name].write.admin = encryptSecret(keys.pubkey, adminPubkey);
     store.data.groups[name].read.admin = encryptSecret(keys.privkey, adminPubkey);
+}
+
+// admin-only, auth version
+operations.createGroupAuth = function createGroupAuth (adminPassword, name) {
+    
+    var adminPub = decryptCryptSym(store.admin.pubkey, adminPassword)
+    operations.createGroup(adminPub, name)
 }
 
 // returns nothing

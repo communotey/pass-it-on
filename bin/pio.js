@@ -36,6 +36,9 @@ const operations = require('../app/operations')
 
 const NO_TARGET_GROUP_GIVEN = 'No target group was specified with --group <Target group name>'
 const INCORRECT_OPTIONS_GIVEN = 'Option not available 😔 refer to docs'
+const BAD_VALUE_GIVEN = 'Bad value given'
+const VALUE_NOT_AVAILABLE = 'The value of the option you have given is invalid'
+const UNKNOWN_ERROR = "Unknown error"
 
 program.version('0.0.1')
 
@@ -78,18 +81,17 @@ program
           prompt.get([{
             name: 'value',
             hidden: true,
-            description: 'Enter the value of the secret?'
+            description: 'Enter the value of the secret'
           }], function(error, result) {
             var value = result.value
             
             operations.addSecretToGroup(username, privkey, parentGroup, name, value)
           }, function (error) {
-            // TODO: create error message (bad value?)
-            console.log()
+            console.log(BAD_VALUE_GIVEN)
           });
         }, function(error) {
-          // TODO: create error message (incorrect groupParent?)
-          console.log()
+          // incorrect groupParent
+          console.log(VALUE_NOT_AVAILABLE)
         })
 
       } else if(options.user) {
@@ -99,8 +101,8 @@ program
           
           operations.addUserToGroup(adminPrivKey, username, parentGroup)
         }, function(error) {
-          // TODO: create error message (incorrect groupParent?)
-          console.log()
+          // incorrect groupParent
+          console.log(VALUE_NOT_AVAILABLE)
         })
       } else if(options.child) {
         credentials.ask().then(function(username, password) {
@@ -110,8 +112,8 @@ program
           
           operations.addGroupToGroup(adminPrivkey, childGroup, parentGroup)
         }, function(error) {
-          // TODO: create error message (incorrect groupParent?)
-          console.log()
+          // incorrect groupParent
+          console.log(VALUE_NOT_AVAILABLE)
         })
       } else {
         console.log(INCORRECT_OPTIONS_GIVEN)
@@ -129,7 +131,6 @@ program
         var uPriv = operations.decryptUserPrivate(username, password)
         var secretName = operations.secret
         
-        // TODO: value description
         prompt.get([{
           name: 'value',
           hidden: true,
@@ -138,12 +139,10 @@ program
           var value = result.value
           operations.changeSecret(username, uPriv, secretName, value)
         }, function (error) {
-          // TODO: create error message (bad value?)
-          console.log()
+          console.log(BAD_VALUE_GIVEN)
         }
       }, function(error) {
-        // TODO: create error message (?)
-        console.log()
+        console.log(UNKNOWN_ERROR)
       })
     } else if(options.password) {
       credentials.ask().then(function(username, password) {
@@ -169,18 +168,27 @@ program
   .option('-s, --secret <secret>', 'Create a secret')
   .option('-u, --user <user>', 'Create a user')
   .action(function (options) {
+    prompt.get([{
+      name: 'admin',
+      hidden: true,
+      description: 'Enter the admin password'
+    }], function(error, result) {
+      var adminPassword = result.admin
+      // TODO: fix adminpubkey
+      // AES PROTECTED
+    })
+    
     if(options.group) {
       var name = options.group
-      // TODO
-      // operations.createGroup(adminPubkey, name)
+      operations.createGroupAuth(adminPassword, name)
     } else if(options.secret) {
       var name = options.secret
       // TODO
       // operations.createSecret(adminPubkey, name)
+      // operations.addSecretToGroup
     } else if(options.user) {
       var name = options.user
-      // TODO
-      // operations.createUser(adminPub, name)
+      operations.createUserAuth(adminPassword, name)
     }
   })
 
