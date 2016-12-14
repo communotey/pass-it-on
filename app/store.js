@@ -113,7 +113,7 @@ store.isOpen = function isOpen() {
 */
 store.open = function open(fileLocation) {
     if(!fileLocation) fileLocation = DEFAULT_FILE_LOCATION;
-    if(fs.isOpen()) {
+    if(store.isOpen()) {  // TODO: fix
         throw new Error('File already open, close that one first.');
     } else {
         return new Promise(function(resolve, reject) {
@@ -151,8 +151,8 @@ store.open = function open(fileLocation) {
 */
 store.close = function close() {
     return new Promise(function(resolve, reject) {
-        if(fs.isOpen()) {
-            write().then(function() {
+        if(store.isOpen()) {
+            store.write().then(function() {
                 fs.close(file.fileDescriptor, function(error) {
                     if(error) throw new Error(error);
                     return resolve();
@@ -176,7 +176,7 @@ store.close = function close() {
         Resolves when data is saved successfully!
 */
 store.write = function write() {
-    if(!fs.isOpen()) {
+    if(!store.isOpen()) {
         throw new Error('Tried to write when no file was open.');
     }
     

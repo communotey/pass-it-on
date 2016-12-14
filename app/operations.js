@@ -197,6 +197,7 @@ operations.changePassword = function changePassword(user, currentPassword, newPa
 // name: of secret
 // value: of secret
 */
+
 operations.addSecretToGroup = function addSecretToGroup(user, uPriv, group, name, value) {
     
     // get group pubkey using uPriv
@@ -285,6 +286,7 @@ operations.deleteSecret = function deleteSecret(secret) {
     
 }
 
+// remove access of a group to a secret
 operations.removeSecret = function removeSecret(secret, group) {
     delete store.data.groups[group].secrets[secret]
 }

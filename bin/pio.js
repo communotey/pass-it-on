@@ -43,7 +43,11 @@ program
   .command('init')
   .description('Initialize store file and admin user')
   .action(function() {
-    prompt.get(['admin'], function(error, result) {
+    prompt.get([{
+      name: 'admin',
+      hidden: true,
+      description: 'Enter the admin password'
+    }], function(error, result) {
       var adminPassword = result.admin
       
       operations.init(adminPassword)
@@ -71,13 +75,21 @@ program
           
           var name = options.secret;
           
-          prompt.get(['value'], function(error, result) {
+          prompt.get([{
+            name: 'value',
+            hidden: true,
+            description: 'Enter the value of the secret?'
+          }], function(error, result) {
             var value = result.value
             
             operations.addSecretToGroup(username, privkey, parentGroup, name, value)
+          }, function (error) {
+            // TODO: create error message (bad value?)
+            console.log()
           });
         }, function(error) {
-          // TODO
+          // TODO: create error message (incorrect groupParent?)
+          console.log()
         })
 
       } else if(options.user) {
@@ -87,7 +99,8 @@ program
           
           operations.addUserToGroup(adminPrivKey, username, parentGroup)
         }, function(error) {
-          // TODO
+          // TODO: create error message (incorrect groupParent?)
+          console.log()
         })
       } else if(options.child) {
         credentials.ask().then(function(username, password) {
@@ -97,7 +110,8 @@ program
           
           operations.addGroupToGroup(adminPrivkey, childGroup, parentGroup)
         }, function(error) {
-          // TODO
+          // TODO: create error message (incorrect groupParent?)
+          console.log()
         })
       } else {
         console.log(INCORRECT_OPTIONS_GIVEN)
@@ -114,15 +128,31 @@ program
       credentials.ask().then(function(username, password) {
         var uPriv = operations.decryptUserPrivate(username, password)
         var secretName = operations.secret
-        // TODO TODO TODO TODO TODO TODO TODO
-        // operations.changeSecret(username, uPriv, group, secretName)
-      }, function(error) {
         
+        // TODO: value description
+        prompt.get([{
+          name: 'value',
+          hidden: true,
+          description: 'Enter the new value of the secret'
+        }], function(error, result) {
+          var value = result.value
+          operations.changeSecret(username, uPriv, secretName, value)
+        }, function (error) {
+          // TODO: create error message (bad value?)
+          console.log()
+        }
+      }, function(error) {
+        // TODO: create error message (?)
+        console.log()
       })
     } else if(options.password) {
       credentials.ask().then(function(username, password) {
-        prompt.get(['new password'], function(error, result) {
-          operations.changePassword(username, password, result['new password'])
+        prompt.get([{
+          name: 'password',
+          hidden: true,
+          description: 'Enter the new value of the password'
+        }], function(error, result) {
+          operations.changePassword(username, password, result['password'])
         })
       }, function(error) {
         
@@ -169,8 +199,7 @@ program
     var parentGroup = options.parentGroup
     
     if(options.child) {
-      // TODO:
-      // operations.deleteGroup(options.group)
+      operations.deleteGroup(options.group)
     } else if(options.secret) {
       operations.deleteSecret(options.secret)
     } else if(options.user) {

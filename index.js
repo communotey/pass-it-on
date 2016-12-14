@@ -12,7 +12,7 @@ const credentials = require('./app/credentials')
 // Use the credentials
 //
 credentials.ask().then(function(username, password) {
-    operations.fetchSecrets(privkey, username)
+    operations.fetchSecrets(password, username)
 }, function() {
     console.log('Something terrible happened!');
 });
