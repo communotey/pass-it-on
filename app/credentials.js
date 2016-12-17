@@ -1,11 +1,8 @@
 const prompt = require('prompt');
 const Promise = require('promise');
-const commander = require('commander');
 
 const ENV_VAR_USER_KEY = "PIO_USER";
 const ENV_VAR_PASS_KEY = "PIO_PASS";
-
-const operations = require('')
 
 function getCredentials() {
     var credentials = new Promise(function(resolve, reject) {

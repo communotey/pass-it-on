@@ -49,7 +49,16 @@ describe('store.js', function() {
                 
                 store.open(TEST_FILE_PATH);
                 
-                store.data.should.equal({});
+                function isEmpty(obj) {
+                    for(var prop in obj) {
+                        if(obj.hasOwnProperty(prop))
+                            return false;
+                    }
+                
+                    return JSON.stringify(obj) === JSON.stringify({});
+                }
+                
+                isEmpty(store.data).should.equal(true)
             });
         });
         

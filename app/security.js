@@ -72,7 +72,7 @@ security.encryptSecretSym = function encryptSecretSym(secret, passphrase) {
     
 }
 
-security.decryptCryptSym = function decryptCryptSym(crypt, passphrase) {{
+security.decryptCryptSym = function decryptCryptSym(crypt, passphrase) {
     var phrase = new fernet.Secret(passphrase);
     
     var token = new fernet.Token({

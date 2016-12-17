@@ -113,7 +113,7 @@ store.isOpen = function isOpen() {
 */
 store.open = function open(fileLocation) {
     if(!fileLocation) fileLocation = DEFAULT_FILE_LOCATION;
-    if(store.isOpen()) {  // TODO: fix
+    if(isOpen()) {  // TODO: fix
         throw new Error('File already open, close that one first.');
     } else {
         return new Promise(function(resolve, reject) {
@@ -193,4 +193,4 @@ store.write = function write() {
 
 store.data = file.json
 
-module.exports = store 
+module.exports = store

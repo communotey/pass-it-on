@@ -1,5 +1,4 @@
 const security = require('./security');
-const KeyPair = require('./KeyPair');
 const store = require('./store')
 
 var operations = {}
@@ -222,6 +221,12 @@ operations.addSecretToGroup = function addSecretToGroup(user, uPriv, group, name
     store.data.secrets[name] = value;
 }
 
+operations.addSecretToGroupAuth = function addSecretToGroupAuth(user, password, group, name, value) {
+    var uPriv = "" // TODO: get user private key
+    // secret.
+    operations.addSecretToGroup(user, uPriv, group, name, value)
+}
+
 // recursive function that adds the groups user is part of + groups their group are part of
 operations.getGroups = function getGroups(group, groups) {
     // TODO: get groups in groups into 1D array
@@ -230,7 +235,7 @@ operations.getGroups = function getGroups(group, groups) {
         
         var fn = function nextLevelRecursion(v){ // sample async action
             // return new Promise(resolve => setTimeout(() => resolve(v * 2), 100));
-            return new Promise(resolve => setTimeout(() => resolve(getGroups(group, groups), 100));
+            return new Promise(resolve => setTimeout(() => resolve(getGroups(group, groups), 100)));
         };
         // map over forEach since it returns
         
@@ -254,7 +259,7 @@ operations.getGroupList = function getGroupList(user) {
     var groups = store.data.users[user].groups;
     
     var fn = function getSubgroups(v){ // sample async action
-        return new Promise(resolve => setTimeout(() => resolve(getGroups(group, groups), 100));
+        return new Promise(resolve => setTimeout(() => resolve(getGroups(group, groups), 100)));
     };
     // map over forEach since it returns
     
@@ -272,7 +277,7 @@ operations.getGroupList = function getGroupList(user) {
 }
 
 operations.deleteSecretLoop = function deleteSecretLoop(group, secret) {
-    if store.data.groups[group].secrets[secret] {
+    if (store.data.groups[group].secrets[secret]) {
         delete store.data.groups[group].secrets[secret];
     }
 }
@@ -284,7 +289,7 @@ operations.deleteSecret = function deleteSecret(secret) {
     // delete store.data.groups.*.secrets[secret]
     
     var fn = function noMoreSecrets(v){ // sample async action
-      return new Promise(resolve => setTimeout(() => resolve(deleteSecretLoop(v, secret), 100));
+      return new Promise(resolve => setTimeout(() => resolve(deleteSecretLoop(v, secret), 100)));
     };
     // map over forEach since it returns
     
@@ -294,7 +299,7 @@ operations.deleteSecret = function deleteSecret(secret) {
     
     var results = Promise.all(actions); // pass array of promises
     
-    results.then(data => // or just .then(console.log)
+    results.then(data => {}// or just .then(console.log)
       // I don't think we're waiting for something to happen
     );
     
@@ -366,7 +371,7 @@ operations.deleteUser = function deleteUser(user) {
     // delete store.data.groups.*.secrets[secret]
     
     var fn = function noMoreUser(v){ // sample async action
-      return new Promise(resolve => setTimeout(() => resolve(deleteUserLoop(v, user), 100));
+      return new Promise(resolve => setTimeout(() => resolve(deleteUserLoop(v, user), 100)));
     };
     // map over forEach since it returns
     
@@ -376,7 +381,7 @@ operations.deleteUser = function deleteUser(user) {
     
     var results = Promise.all(actions); // pass array of promises
     
-    results.then(data => // or just .then(console.log)
+    results.then(data => {}// or just .then(console.log)
       // I don't think we're waiting for something to happen
     );
     
@@ -452,7 +457,7 @@ operations.fetchSecretPassphrase = function fetchSecretPassphrase (user, userPri
         // push all groups under that parent
         var groupArr = store.data.groups[group].groups;
         nodeStack.push(groupArr);
-        for(int i = 0; i< groupArr.length; i++) {
+        for(var i = 0; i< groupArr.length; i++) {
             pathStack.push(groupArr[i]);
             if (found(groupArr[i])) {             // is it part of the group?
                 return true;
@@ -476,7 +481,7 @@ operations.fetchSecretPassphrase = function fetchSecretPassphrase (user, userPri
     nodeStack[0].concat(groupArr);  // groups need to check
     var pathStack = []; // groups needed to obtain secret
     
-    for(int i = 0; i< groupArr.length; i++) {
+    for(var i = 0; i< groupArr.length; i++) {
         pathStack.push(groupArr[i]);
         if (found(groupArr[i])) {             // is it part of the group?
             break;
@@ -491,7 +496,7 @@ operations.fetchSecretPassphrase = function fetchSecretPassphrase (user, userPri
     }
     else {
         var privkey = userPriv;
-        for (int i = 0; i < pathStack.length; i++) {
+        for (var i = 0; i < pathStack.length; i++) {
             
             privkey = security.decryptCrypt(store.data.groups[pathStack[i]].users.read[user], privkey);
         }
@@ -504,7 +509,7 @@ operations.fetchSecrets = function fetchSecrets(userPriv, user) {
     function loopGroups(group) {
         var groupArr = store.data.groups[group].groups;
         nodeStack.push(groupArr);
-        for (int i = 0; i< groupArr.length; i++) {
+        for (var i = 0; i< groupArr.length; i++) {
             pathStack.push(groupArr[i]);
             privStack.push(security.decryptCrypt(store.groups[groupArr[i]].users.read[user], privStack[i]));
             
@@ -530,7 +535,7 @@ operations.fetchSecrets = function fetchSecrets(userPriv, user) {
     var pathStack = []; // groups needed to obtain secret
     var privStack = []; // unlocked private keys of each respective group
     
-    for(int i = 0; i< groupArr.length; i++) {
+    for(var i = 0; i< groupArr.length; i++) {
         pathStack.push(groupArr[i]);
         privStack.push(security.decryptCrypt(store.groups[groupArr[i]].users.read[user], userPriv))
         

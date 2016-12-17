@@ -40,7 +40,7 @@ Types:
 - Read: private key
 - Write: public keys
 
-Locked with **GPG**
+Group public keys are locked with **GPG** such that groups can be part of other groups
 
 ### ADMIN user
 
@@ -108,11 +108,14 @@ The U.S. Government Department of Commerce, Bureau of Industry and Security (BIS
 
 ##TODO
 
-- [ ] fix store.js
-- [ ] test cases: `npm test` fails 😥
+- [x] fix store.js
+- [x] test cases: `npm test` fails 😥
 - [ ] command line commands (`pio.js`)
-- [ ] Teach Kemal how to do config and env variables file
-- [ ] operations: removeSecret, deleteSecret, addSecretToGroup
+- [x] Teach Kemal how to do config and env variables file
+- [ ] operations:
+    - removeSecret: remove access to user / group
+    - deleteSecret: delete memory to secret (give warning:)
+    - addSecretToGroup: if you have the public key to a group, you can add a secret to the group
 - [ ] figure out grouping stuff
 - [ ] make `Auth` version of public-facing functions to auto-decrypt pub/priv keys because operations should be only thing that talks to security
-- [ ] is it ok that `store.json` is ignored?
+- [x] is it ok that `store.json` is ignored?

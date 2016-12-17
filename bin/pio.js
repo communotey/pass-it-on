@@ -31,8 +31,9 @@ const co = require('co')
 const program = require('commander');
 const prompt = require('prompt');
 const colors = require('colors');
-const credentials = require('../app/credentials')
-const operations = require('../app/operations')
+
+const credentials = require('../app/credentials');
+const operations = require('../app/operations');
 
 const NO_TARGET_GROUP_GIVEN = 'No target group was specified with --group <Target group name>'
 const INCORRECT_OPTIONS_GIVEN = 'Option not available 😔 refer to docs'
@@ -140,7 +141,7 @@ program
           operations.changeSecret(username, uPriv, secretName, value)
         }, function (error) {
           console.log(BAD_VALUE_GIVEN)
-        }
+        })
       }, function(error) {
         console.log(UNKNOWN_ERROR)
       })
@@ -168,12 +169,13 @@ program
   .option('-s, --secret <secret>', 'Create a secret')
   .option('-u, --user <user>', 'Create a user')
   .action(function (options) {
+    var adminPassword = ""
     prompt.get([{
       name: 'admin',
       hidden: true,
       description: 'Enter the admin password'
     }], function(error, result) {
-      var adminPassword = result.admin
+      adminPassword = result.admin
       // TODO: fix adminpubkey
       // AES PROTECTED
     })
@@ -184,7 +186,8 @@ program
     } else if(options.secret) {
       var name = options.secret
       // TODO
-      // operations.createSecret(adminPubkey, name)
+      // ask which group to add the secret to
+      // default to all group
       // operations.addSecretToGroup
     } else if(options.user) {
       var name = options.user
