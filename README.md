@@ -110,12 +110,15 @@ The U.S. Government Department of Commerce, Bureau of Industry and Security (BIS
 
 - [x] fix store.js
 - [x] test cases: `npm test` fails 😥
+- [ ] [travis-ci tests fail](https://travis-ci.org/communotey/pass-it-on)
+- [ ] [code coverage](https://coveralls.io/github/goatandsheep/pass-it-on?branch=master)
 - [ ] command line commands (`pio.js`)
 - [x] Teach Kemal how to do config and env variables file
 - [ ] operations:
     - removeSecret: remove access to user / group
     - deleteSecret: delete memory to secret (give warning:)
-    - addSecretToGroup: if you have the public key to a group, you can add a secret to the group
+    - addSecretToGroup: if you have the public key to a group, you can add a secret to the 
+    - changeGroupKeys: finish/fix implementation
 - [ ] figure out grouping stuff
 - [ ] make `Auth` version of public-facing functions to auto-decrypt pub/priv keys because operations should be only thing that talks to security
 - [x] is it ok that `store.json` is ignored?

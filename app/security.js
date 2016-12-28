@@ -15,10 +15,8 @@ var b64 = require('base64url');
 pgp.initWorker({ path:'openpgp.worker.js' });
 
 security.hashPassword = function hashPassword (password, salt) {
-    var pbkdf2Hash = Promise.denodeify(crypto.pbkdf2)
-    var derivedKey = pbkdf2Hash(password, salt, 100000, 32, 'sha512');
+    var derivedKey = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha512');
     var hashed = b64.encode(derivedKey);
-    
     var secret = new fernet.Secret(hashed);
     
     var token = new fernet.Token({
@@ -87,7 +85,7 @@ security.decryptCryptSym = function decryptCryptSym(crypt, passphrase) {
 security.encryptHashedSecretSym = function encryptHashedSecretSym(secret, passphrase, salt) {
 
     // generate hash with password+salt
-    var token = hashPassword(passphrase, salt);
+    var token = security.hashPassword(passphrase, salt);
     
     // fernet encrypt with hash
     return token.encode(secret);
@@ -106,13 +104,13 @@ security.decryptHashedCryptSym = function decryptHashedCryptSym(crypt, passphras
 security.generateAdminKeys = function generateAdminKeys(password) {
 
     // generate user's private key
-    var keys = generateKeys()
+    var keys = security.generateKeys()
     
     // generate random salt
     var salt = crypto.randomBytes(16);
     
-    var privkey = encryptHashedSecretSym(keys.privkey, password, salt);
-    var pubkey = encryptHashedSecretSym(keys.pubkey, password, salt);
+    var privkey = security.encryptHashedSecretSym(keys.privkey, password, salt);
+    var pubkey = security.encryptHashedSecretSym(keys.pubkey, password, salt);
     
     var user = {
         privkey: privkey,
@@ -130,12 +128,12 @@ security.generateUserKeys = function generateUserKeys() {
     password = "t_" + password;
     
     // generate user's private key
-    var keys = generateKeys()
+    var keys = security.generateKeys()
     
     // generate random salt
     var salt = crypto.randomBytes(16);
     
-    var privkey = encryptHashedSecretSym(keys.privkey, password, salt);
+    var privkey = security.encryptHashedSecretSym(keys.privkey, password, salt);
     
     var user = {
         privkey: privkey,

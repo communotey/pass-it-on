@@ -113,12 +113,14 @@ store.isOpen = function isOpen() {
 */
 store.open = function open(fileLocation) {
     if(!fileLocation) fileLocation = DEFAULT_FILE_LOCATION;
-    if(isOpen()) {  // TODO: fix
+    if(store.isOpen()) {
         throw new Error('File already open, close that one first.');
     } else {
         return new Promise(function(resolve, reject) {
             // 'a+' flag: Open file for reading and appending. The file is created if it does not exist.
+            // TODO: fix the binding.open(pathModule._makeLong(path), path must be a string error
             fs.open(fileLocation, 'a+', function(error, fileDescriptor) {
+                console.log('FileDescriptor:', fileDescriptor)
                 fs.readFile(fileDescriptor, {encoding: FILE_ENCODING}, function(error, contents) {
                     if(error) return reject(error);
 
