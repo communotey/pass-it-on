@@ -40,6 +40,7 @@
     "co": "^4.6.0",
     "commander": "^2.9.0",
     "fernet": "^0.3.0",
+    "jsonfile": "^2.4.0",
     "openpgp": "^2.3.2",
     "promise": "^7.1.1",
     "prompt": "^1.0.0"

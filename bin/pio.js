@@ -4,22 +4,22 @@
 
                           USAGE:      pio <verb> [options]
 * Initialize store                    pio init
-                          
+
 * Add group to group                  pio add     -c|--child <groupChild> -g|--group <groupParent>
                                                   -s|--secret <secret> -g|--group <group>
                                                   -u|--user <user> -g|--group <group>
-                                          
+
                                           change  -s|--secret <secret>
                                                   -p|--password
-                                                  
+
                                           create  -g|--group <group>
                                                   -s|--secret <secret>
                                                   -u|--user <user>
-                                          
+
                                           delete  -g|--group <group>
                                                   -s|--secret <secret>
                                                   -u|--user <user>
-                                                  
+
                                           remove  -c|--child -g|--group <group>
                                                   -s|--secret <secret> -g|--group <group>
                                                   -u|--user -g|--group <group>
@@ -47,17 +47,18 @@ program
   .command('init')
   .description('Initialize store file and admin user')
   .action(function() {
-    prompt.get([{
+    prompt.get({
       name: 'admin',
       hidden: true,
       description: 'Enter the admin password'
-    }], function(error, result) {
+    }, function(error, result) {
       var adminPassword = result.admin
-      
+
       operations.init(adminPassword)
+      console.log('init done!')
     })
   })
-  
+
 program
   .command('add')
   .usage('<option> -g|--group <groupParent>')
@@ -71,21 +72,21 @@ program
         console.log(NO_TARGET_GROUP_GIVEN)
         return;
       }
-      
+
       if(options.secret) {
         credentials.ask().then(function(username, password) {
           var privkey = operations.decryptUserPrivate(username, password)
           var parentGroup = options.groupParent
-          
+
           var name = options.secret;
-          
+
           prompt.get([{
             name: 'value',
             hidden: true,
             description: 'Enter the value of the secret'
           }], function(error, result) {
             var value = result.value
-            
+
             operations.addSecretToGroup(username, privkey, parentGroup, name, value)
           }, function (error) {
             console.log(BAD_VALUE_GIVEN)
@@ -99,7 +100,7 @@ program
         credentials.ask().then(function(username, password) {
           var adminPrivKey = operations.decryptUserPrivate(username, password)
           var parentGroup = options.groupParent
-          
+
           operations.addUserToGroup(adminPrivKey, username, parentGroup)
         }, function(error) {
           // incorrect groupParent
@@ -110,7 +111,7 @@ program
           var adminPrivkey = operations.decryptUserPrivate(username, password)
           var childGroup = options.groupChild
           var parentGroup = options.groupParent
-          
+
           operations.addGroupToGroup(adminPrivkey, childGroup, parentGroup)
         }, function(error) {
           // incorrect groupParent
@@ -120,7 +121,7 @@ program
         console.log(INCORRECT_OPTIONS_GIVEN)
      }
   })
-  
+
 program
   .command('change')
   .description('Change the value of a secret or a user\'s password')
@@ -131,7 +132,7 @@ program
       credentials.ask().then(function(username, password) {
         var uPriv = operations.decryptUserPrivate(username, password)
         var secretName = operations.secret
-        
+
         prompt.get([{
           name: 'value',
           hidden: true,
@@ -155,13 +156,13 @@ program
           operations.changePassword(username, password, result['password'])
         })
       }, function(error) {
-        
+
       })
     } else {
       console.log(INCORRECT_OPTIONS_GIVEN)
     }
   })
-  
+
 program
   .command('create')
   .description('Create groups, secrets or users')
@@ -179,7 +180,7 @@ program
       // TODO: fix adminpubkey
       // AES PROTECTED
     })
-    
+
     if(options.group) {
       var name = options.group
       operations.createGroupAuth(adminPassword, name)
@@ -206,9 +207,9 @@ program
       console.log(NO_TARGET_GROUP_GIVEN)
       return;
     }
-    
+
     var parentGroup = options.parentGroup
-    
+
     if(options.child) {
       operations.deleteGroup(options.group)
     } else if(options.secret) {
@@ -233,9 +234,9 @@ program
       console.log(NO_TARGET_GROUP_GIVEN)
       return;
     }
-    
+
     var parentGroup = options.parentGroup
-    
+
     if(options.child) {
       operations.removeGroup(options.child, parentGroup)
     } else if(options.secret) {

@@ -4,19 +4,19 @@
     Store.js
     --------
     This module manages file I/O for a JSON-based flat file database.
-    
+
     Usage
     -----
     var store = require('./store');
-    
+
     store.open(STORE_FILE_LOCATION)
-    
+
     store.data.groups.group1.blah = 3;
     store.write() // optional
     store.data.users = [{username: 'user1'}]
-    
+
     store.close()
-    
+
     NOTE:   open(fileLocation)  before making changes to `store.data`, open a file.
                                 If no fileLocation is provided, it opens the default location.
             write()             to write the current `store.data` to the file.
@@ -33,47 +33,46 @@ var store = {}
 
 /*
     This object holds data about the currently open file.
-    
-    json: 
+
+    json:
         the json in the currently opened file.
         this is the variable you read/edit after opening the file.
         when you write/close the file, this variable is saved in the file.
-    fileDescriptor: 
-        the `fd` that is assigned by the operating system. 
+    fileDescriptor:
+        the `fd` that is assigned by the operating system.
         If fileDescriptor != null, a file is open!
         Close that file before opening a new one.
 */
-var file = {
+const file = {
     json: {},
-    fileDescriptor: null,
-};
+}
 
 /*
     Clears an object without breaking references to that object.
-    
+
     In other words, effectively doing this:
         obj = {}
     But without breaking other references to obj.
-    
+
     @param {Object} obj
         Object whose properties should be cleared.
     @private
 */
 function clearObject(obj) {
-    for(var prop in obj) { 
-        if(obj.hasOwnProperty(prop)) { 
-            delete obj[prop]; 
-        } 
+    for(var prop in obj) {
+        if(obj.hasOwnProperty(prop)) {
+            delete obj[prop];
+        }
     }
 }
 
 /*
     Make one object's properties the same as another's, without breaking any references to that object.
-    
-    In other words, effectively doing this:      
+
+    In other words, effectively doing this:
         obj = obj2
     But without breaking other references to obj.
-    
+
     @param {Object} obj
         Object which should reflect the other object's properties.
         (It's original properties are deleted)
@@ -96,19 +95,19 @@ function copyObject(obj, obj2) {
     @private
 */
 store.isOpen = function isOpen() {
-    return file.fileDescriptor !== null;
+    return file.json !== null;
 }
 
 /**
     Opens a file and reads it it's content as JSON.
     Opening a file will fail if there is one open already.
-    
+
     @param {String} [fileLocation]
         Location of file which should be opened.
-        
+
     @throws {Error}
         If a file is already opened.
-    
+
     @return {Promise}
 */
 store.open = function open(fileLocation) {
@@ -120,7 +119,6 @@ store.open = function open(fileLocation) {
             // 'a+' flag: Open file for reading and appending. The file is created if it does not exist.
             // TODO: fix the binding.open(pathModule._makeLong(path), path must be a string error
             fs.open(fileLocation, 'a+', function(error, fileDescriptor) {
-                console.log('FileDescriptor:', fileDescriptor)
                 fs.readFile(fileDescriptor, {encoding: FILE_ENCODING}, function(error, contents) {
                     if(error) return reject(error);
 
@@ -145,10 +143,10 @@ store.open = function open(fileLocation) {
 
 /**
     Closes the currently open file.
-    
-    @throws {Error} 
+
+    @throws {Error}
         File did not close properly or no file was open.
-        
+
     @return {Promise}
 */
 store.close = function close() {
@@ -170,29 +168,36 @@ store.close = function close() {
 
 /**
     Saves current state of the data in the currently open file.
-    
+
     @throws {Error}
         Fails to write when no file is not open!
-        
+
     @return {Promise}
         Resolves when data is saved successfully!
 */
 store.write = function write() {
+  console.log('trying to write to:', file.json, store.data)
     if(!store.isOpen()) {
         throw new Error('Tried to write when no file was open.');
     }
-    
+
     return new Promise(function(resolve, reject) {
         var data = JSON.stringify(file.data);
-        
+
         fs.write(file.fileDescriptor, data, FILE_ENCODING, function(error, written, string) {
             if(error) return reject(error);
-            
+
             return resolve();
         });
     });
 }
 
-store.data = file.json
+store.set = function set(key, value) {
+  file.json[key] = value
+}
+
+store.get = function get(key) {
+  return file.json[key]
+}
 
 module.exports = store
