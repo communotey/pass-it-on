@@ -27,10 +27,11 @@
 
 // TODO: session loop
 
-const co = require('co')
 const program = require('commander');
 const prompt = require('prompt');
 const colors = require('colors');
+
+const security = require('../app/security')
 
 const credentials = require('../app/credentials');
 const operations = require('../app/operations');
@@ -44,7 +45,7 @@ const UNKNOWN_ERROR = "Unknown error"
 program.version('0.0.1')
 
 program
-  .command('init')
+  .command('init')  
   .description('Initialize store file and admin user')
   .action(function() {
     prompt.get({
@@ -58,6 +59,19 @@ program
       console.log('init done!')
     })
   })
+  
+program
+.command('dummy')
+.usage('abcdummy')
+.description('')
+.action(function(options) {
+  security.generateKeys().then(function(keys) {
+      console.log(keys)
+  }, function(error) {
+    console.log(error)
+  })
+})
+
 
 program
   .command('add')
@@ -179,21 +193,23 @@ program
       adminPassword = result.admin
       // TODO: fix adminpubkey
       // AES PROTECTED
+      
+      if(options.group) {
+        var name = options.group
+        operations.createGroupAuth(adminPassword, name)
+      } else if(options.secret) {
+        var name = options.secret
+        // TODO
+        // ask which group to add the secret to
+        // default to all group
+        // operations.addSecretToGroup
+      } else if(options.user) {
+        var name = options.user
+        operations.createUserAuth(adminPassword, name)
+      }
+
     })
 
-    if(options.group) {
-      var name = options.group
-      operations.createGroupAuth(adminPassword, name)
-    } else if(options.secret) {
-      var name = options.secret
-      // TODO
-      // ask which group to add the secret to
-      // default to all group
-      // operations.addSecretToGroup
-    } else if(options.user) {
-      var name = options.user
-      operations.createUserAuth(adminPassword, name)
-    }
   })
 
 program
@@ -247,5 +263,6 @@ program
       console.log(INCORRECT_OPTIONS_GIVEN)
     }
   })
+
 
 program.parse(process.argv);

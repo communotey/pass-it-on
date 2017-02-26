@@ -122,3 +122,4 @@ The U.S. Government Department of Commerce, Bureau of Industry and Security (BIS
 - [ ] figure out grouping stuff
 - [ ] make `Auth` version of public-facing functions to auto-decrypt pub/priv keys because operations should be only thing that talks to security
 - [x] is it ok that `store.json` is ignored?
+- [ ] allow input of admin email address

@@ -4,6 +4,8 @@ var crypto = require("crypto");
 var fernet = require("fernet");
 var pgp = require("openpgp");
 
+const jsonfile = require('jsonfile');
+
 var security = {}
 
 // var keybase = require("kbpgp");
@@ -33,20 +35,12 @@ security.generateKeys = function generateKeys () {
     
     var privkey, pubkey;
     var options = {
-        // userIds: [{ name:'Jon Smith', email:'jon@example.com' }], // multiple user IDs, could be group/username key
+        userIds: [{ name:'admin', email:'goatandsheep@gmail.com' }], // multiple user IDs, could be group/username key
         numBits: 4096,                                            // RSA key size 
         // passphrase: 'super long and hard to guess secret'         // optional, protects the private key 
     };
      
-    pgp.generateKey(options).then(function(key) {
-        privkey = key.privateKeyArmored; // '-----BEGIN PGP PRIVATE KEY BLOCK ... ' 
-        pubkey = key.publicKeyArmored;   // '-----BEGIN PGP PUBLIC KEY BLOCK ... ' 
-    });
-    var keys = {
-        privkey: privkey,
-        pubkey: pubkey
-    }
-    return keys
+    return pgp.generateKey(options);
 }
 
 // non-hashed symmetric key generation
@@ -71,19 +65,28 @@ security.encryptSecretSym = function encryptSecretSym(secret, passphrase) {
 }
 
 security.decryptCryptSym = function decryptCryptSym(crypt, passphrase) {
+    console.log('passphrase', passphrase)
+    
     var phrase = new fernet.Secret(passphrase);
     
     var token = new fernet.Token({
         secret: phrase,
     });
+    
     // fernet decrypt
     return token.decode(crypt);
 
 }
 
-// symmetric encryption using fernet, using hashed password
 security.encryptHashedSecretSym = function encryptHashedSecretSym(secret, passphrase, salt) {
-
+    /**
+     * symmetric encryption using fernet, using hashed password
+     * @param {string} secret waiting encryption
+     * @param {string} unhashed passphrase
+     * @param {string} salt to hash the passphrase
+     * @returns {string} encrypted secret
+     * /
+    
     // generate hash with password+salt
     var token = security.hashPassword(passphrase, salt);
     
@@ -93,32 +96,43 @@ security.encryptHashedSecretSym = function encryptHashedSecretSym(secret, passph
 
 // symmetric decryption using fernet, using hashed password
 security.decryptHashedCryptSym = function decryptHashedCryptSym(crypt, passphrase, salt) {
-    
     // generate hash with password+salt
-    var token = hashPassword(passphrase, salt);
+    var token = security.hashPassword(passphrase, salt);
     
     // fernet decrypt with hash
     return token.decode(crypt);
 }
 
 security.generateAdminKeys = function generateAdminKeys(password) {
-
     // generate user's private key
-    var keys = security.generateKeys()
-    
-    // generate random salt
-    var salt = crypto.randomBytes(16);
-    
-    var privkey = security.encryptHashedSecretSym(keys.privkey, password, salt);
-    var pubkey = security.encryptHashedSecretSym(keys.pubkey, password, salt);
-    
-    var user = {
-        privkey: privkey,
-        pubkey: pubkey,
-        salt: salt,
-        password: password
-    };
-    return user;
+    return new Promise(function(resolve, reject) {
+        var keys = security.generateKeys().then(function(key) {
+            privkey = key.privateKeyArmored; // '-----BEGIN PGP PRIVATE KEY BLOCK ... ' 
+            pubkey = key.publicKeyArmored;   // '-----BEGIN PGP PUBLIC KEY BLOCK ... ' 
+            
+            var keys = {
+                privkey: privkey,
+                pubkey: pubkey
+            }
+            
+            console.log('KEYS', keys)
+            // generate random salt
+            var salt = crypto.randomBytes(16);
+            console.log("randombytes")
+            var privkey = security.encryptHashedSecretSym(keys.privkey, password, salt);
+            var pubkey = security.encryptHashedSecretSym(keys.pubkey, password, salt);
+            console.log('done')
+            console.log(privkey)
+            console.log(pubkey)
+            var user = {
+                privkey: privkey,
+                pubkey: pubkey,
+                salt: salt,
+                password: password
+            };
+            resolve(user);
+        });
+    })
 }
 
 security.generateUserKeys = function generateUserKeys() {

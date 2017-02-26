@@ -36,8 +36,6 @@
   "homepage": "https://github.com/communotey/pass-it-on#readme",
   "dependencies": {
     "base64url": "^2.0.0",
-    "bignum": "^0.12.5",
-    "co": "^4.6.0",
     "commander": "^2.9.0",
     "fernet": "^0.3.0",
     "jsonfile": "^2.4.0",

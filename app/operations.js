@@ -3,10 +3,17 @@ const jsonfile = require('jsonfile');
 
 const STORE_FILE_LOCATION = 'store.json'
 
+function readJson() {
+    return jsonfile.readFileSync(STORE_FILE_LOCATION);
+}
+
+function saveJson(json) {
+    jsonfile.writeFileSync(STORE_FILE_LOCATION, json);
+}
+
 var operations = {}
 
 operations.init = function init(password) {
-  // setup store.json
   json = {
     users: {},
     groups: {},
@@ -23,27 +30,29 @@ operations.init = function init(password) {
 // password: set the value of the admin password
 operations.createAdmin = function createAdmin(password) {
     var name = "admin"
-    var user = security.generateAdminKeys(password);
-
-    var json = jsonfile.readFileSync(STORE_FILE_LOCATION);
-    if(!json.users) {
-        json.users = {}
-    }
-
-    if(!json.users[name]) {
-        json.users[name] = {}
-    }
-
-    // encrypt user pubkey with fernet
-    json.users[name].pubkey = user.pubkey;
-
-    // encrypt user privkey with fernet
-    json.users[name].privkey = user.privkey;
-
-    json.users[name].salt = user.salt;
-    // no groups array for admin
-    jsonfile.writeFileSync(STORE_FILE_LOCATION, json);
-    console.log('createAdmin done!')
+    var user = security.generateAdminKeys(password).then(function(user) {
+        var json = jsonfile.readFileSync(STORE_FILE_LOCATION);
+        if(!json.users) {
+            json.users = {}
+        }
+    
+        if(!json.users[name]) {
+            json.users[name] = {}
+        }
+    
+        // encrypt user pubkey with fernet
+        json.users[name].pubkey = user.pubkey;
+    
+        // encrypt user privkey with fernet
+        json.users[name].privkey = user.privkey;
+    
+        json.users[name].salt = user.salt;
+        // no groups array for admin
+        jsonfile.writeFileSync(STORE_FILE_LOCATION, json);
+        console.log('createAdmin done!') 
+    });
+    
+    saveJson(json)
 }
 
 // admin
@@ -62,14 +71,17 @@ operations.createUser = function createUser(adminPub, name) {
 
     json.users[name].salt = user.salt;
     json.users[name].groups = [];
+    saveJson(json)
 
 }
 
 // admin-only, auth version
 operations.createUserAuth = function createUserAuth (adminPassword, name) {
+    var json = readJson();
 
-    var adminPub = operations.decryptCryptSym(store.admin.pubkey, adminPassword)
+    var adminPub = operations.decryptCryptSym(json.admin.pubkey, adminPassword)
     operations.createUser(adminPub, name)
+    saveJson(json)
 }
 
 /*
@@ -78,6 +90,7 @@ operations.createUserAuth = function createUserAuth (adminPassword, name) {
     @param {String} adminPriv: current user's private key (not the user being added)
 */
 operations.addUserToGroup = function addUserToGroup(adminPriv, username, group) {
+    var json = readJson();
 
     // get user pubkey to get group's pubkey
     var pubkey = security.decryptHashedCryptSym(json.users[username].pubkey, adminPriv, json.users[username].salt);
@@ -90,6 +103,7 @@ operations.addUserToGroup = function addUserToGroup(adminPriv, username, group) 
 
     json.groups[group].users.read[username] = crypt;
     json.users[username].groups += group;
+    saveJson(json)
 
 }
 
@@ -106,17 +120,16 @@ operations.addGroupToGroup = function addGroupToGroup(adminPrivkey, childName, p
 
     json.groups[parentName].users.read[childName] = crypt;
     json.groups[childName].groups += parentName;
+    saveJson(json)
 
 }
 
 
 // admin-only
 operations.changeGroupKeys = function changeGroupKeys(adminPrivkey, group) {
-    store.open();
+    var json = jsonfile.readFileSync(STORE_FILE_LOCATION)
 
-    // TODO
-    // FIXME
-    // I just realized that this isn't done lol
+    // TODO // FIXME // I just realized that this isn't done lol
 
     var groupData = json.groups[group];
 
@@ -155,6 +168,8 @@ operations.changeGroupKeys = function changeGroupKeys(adminPrivkey, group) {
         var decryptedGroupSecret = security.encryptSecret(decryptedGroupSecrets[i], groupPubKey);
         recryptedGroupSecrets.push(decryptedGroupSecret);
     }
+    
+    saveJson(json)
 }
 
 // admin-only
@@ -168,11 +183,12 @@ operations.changeSecret = function changeSecret(user, uPriv, secretName, value) 
 
     // store value
     json.secrets[secretName] = crypt;
+    saveJson(json)
 }
 
 // admin-only
 operations.changeSecretPassphrase = function changeSecretPassphrase(user, uPriv, group, secretName) {
-
+    var json = readJson();
     // get group privates
     var privkey = operations.decryptCrypt(json.groups[group].users.read[user], uPriv);
 
@@ -191,11 +207,14 @@ operations.changeSecretPassphrase = function changeSecretPassphrase(user, uPriv,
     // store new values
     json.groups[group].secrets[secretName] = crypt;
     json.secrets[secretName] = crypt;
+    saveJson(json)
 }
 
 
 // admin-only
 operations.createGroup = function createGroup(adminPubkey, name) {
+    var json = readJson()
+    
     json.groups[name] = {};
     json.groups[name].groups = [];
 
@@ -203,23 +222,32 @@ operations.createGroup = function createGroup(adminPubkey, name) {
     var keys = security.generateKeys();
     json.groups[name].write.admin = operations.encryptSecret(keys.pubkey, adminPubkey);
     json.groups[name].read.admin = operations.encryptSecret(keys.privkey, adminPubkey);
+    
+    saveJson(json)
 }
 
 // admin-only, auth version
 operations.createGroupAuth = function createGroupAuth (adminPassword, name) {
-
-    var adminPub = decryptCryptSym(store.admin.pubkey, adminPassword)
+    var json = readJson();
+    var saltBuffer = Buffer.from(json.users.admin.salt.data)
+    
+    var adminPub = security.decryptHashedCryptSym(json.users.admin.pubkey, adminPassword, saltBuffer)
     operations.createGroup(adminPub, name)
+    
+    saveJson(json);
 }
 
 // returns nothing
 operations.changePassword = function changePassword(user, currentPassword, newPassword) {
-
+    var json = readJson();
+    
     // decrypt private key
     var secret = security.decryptHashedCryptSym(json.users[user].privkey, currentPassword, json.users[user].salt);
 
     // recrypt private key
     operations.encryptHashedSecretSym(secret, newPassword, json.users[user].salt);
+
+    saveJson(json);
 }
 
 /*
@@ -228,13 +256,14 @@ operations.changePassword = function changePassword(user, currentPassword, newPa
 */
 
 operations.addSecretToGroup = function addSecretToGroup(user, uPriv, group, name, value) {
-
+    var json = readJson()
     // get group pubkey using uPriv
     var pubkey = security.decryptCrypt(json.groups[group].users.write[user], uPriv);
 
     var cipher = security.encrypt_secret(value, pubkey);
     json.groups[group].secrets[name] = cipher;
     json.secrets[name] = value;
+    saveJson(json);
 }
 
 operations.addSecretToGroupAuth = function addSecretToGroupAuth(user, password, group, name, value) {
@@ -245,6 +274,7 @@ operations.addSecretToGroupAuth = function addSecretToGroupAuth(user, password, 
 
 // recursive function that adds the groups user is part of + groups their group are part of
 operations.getGroups = function getGroups(group, groups) {
+    var json = readJson()
     // TODO: get groups in groups into 1D array
 
     if (json.groups[group].groups != []) {
@@ -272,6 +302,8 @@ operations.getGroups = function getGroups(group, groups) {
 
 // less params. is there overloading in js?
 operations.getGroupList = function getGroupList(user) {
+    var json = readJson()
+    
     var groups = json.users[user].groups;
 
     var fn = function getSubgroups(group){ // sample async action
@@ -293,12 +325,15 @@ operations.getGroupList = function getGroupList(user) {
 }
 
 operations.deleteSecretLoop = function deleteSecretLoop(group, secret) {
+    var json = readJson()
     if (json.groups[group].secrets[secret]) {
         delete json.groups[group].secrets[secret];
     }
+    saveJson(json);
 }
 
 operations.deleteSecret = function deleteSecret(secret) {
+    var json = readJson()
     delete json.secrets[item];
 
     // delete wherever else the item is located
@@ -318,34 +353,42 @@ operations.deleteSecret = function deleteSecret(secret) {
     results.then(data => {}// or just .then(console.log)
       // I don't think we're waiting for something to happen
     );
-
+    
+    saveJson(json);
 }
 
 // remove access of a group to a secret
 operations.removeSecret = function removeSecret(secret, group) {
+    var json = readJson()
     delete json.groups[group].secrets[secret]
+    saveJson(json);
 }
 
 operations.removeGroup = function removeGroup(child, parent) {
+    var json = readJson()
     var index = json.groups[child].groups.indexOf(parent)
     if(index !== -1) {
         json.groups[child].groups.splice(index, 1);
     }
 
     delete json.groups[parent].users.read[child]
+    saveJson(json);
 }
 
 operations.removeUser = function removeUser(user, group) {
+    var json = readJson()
     var index = json.users[user].groups.indexOf(group)
     if(index !== -1) {
         json.users[user].groups.splice(index, 1);
     }
 
     delete json.groups[group].users.read[user]
+    saveJson(json);
 }
 
 operations.deleteGroup = function deleteGroup(group) {
-
+    var json = readJson()
+    
     // remove parents' memories of children
     for (var parent in json.groups[group].groups) {
         delete json.groups[parent].users.read[group]
@@ -373,15 +416,18 @@ operations.deleteGroup = function deleteGroup(group) {
 
     // delete group object
     delete json.groups[group]
+    saveJson(json);
 }
 
 function deleteUserLoop(group, user) {
+    var json = readJson()
     delete json.groups[group].users.read[user];
+    saveJson(json);
 
 }
 
 operations.deleteUser = function deleteUser(user) {
-
+    var json = readJson()
     // for each in json.users[item].groups, delete user key from json.groups.group
 
     // delete json.groups.*.secrets[secret]
@@ -402,9 +448,11 @@ operations.deleteUser = function deleteUser(user) {
     );
 
     delete json.users[user];
+    saveJson(json);
 }
 
 operations.decryptUserPrivate = function decryptUserPrivate(user, password) {
+    var json = readJson()
     return security.decryptHashedCryptSym(json.users[user].private, password, json.users[user].salt)
 }
 
@@ -449,18 +497,20 @@ SecretNotFoundError.prototype = Error.prototype;
 
 // get value of a secret available to user
 operations.fetchSecret = function fetchSecret(userPriv, user, secretName) {
+    var json = readJson()
     var passphrase = operations.fetchSecretPassphrase(user, userPriv, secretName)
 
-    var secret =  security.decryptCryptSym(json.secrets[secretName], privkey)
+    var secret =  security.decryptCryptSym(json.secrets[secretName], userPriv)
     operations.exportSecret(secretName, secret)
 
 }
 
 // get value of a secret available to user
 operations.fetchSecretPassphrase = function fetchSecretPassphrase (user, userPriv, secretName) {
+    var json = readJson();
 
     function found(node) {
-        if (store.groups[node].secrets[secretName]) {
+        if (json.groups[node].secrets[secretName]) {
             return true;
         }
         else {
@@ -521,13 +571,14 @@ operations.fetchSecretPassphrase = function fetchSecretPassphrase (user, userPri
 }
 
 operations.fetchSecrets = function fetchSecrets(userPriv, user) {
+    var json = readJson();
 
     function loopGroups(group) {
         var groupArr = json.groups[group].groups;
         nodeStack.push(groupArr);
         for (var i = 0; i< groupArr.length; i++) {
             pathStack.push(groupArr[i]);
-            privStack.push(security.decryptCrypt(store.groups[groupArr[i]].users.read[user], privStack[i]));
+            privStack.push(security.decryptCrypt(json.groups[groupArr[i]].users.read[user], privStack[i]));
 
             if (groupArr[i] != []) {    // are there subgroups?
                 loopGroups(groupArr[i])
@@ -553,7 +604,7 @@ operations.fetchSecrets = function fetchSecrets(userPriv, user) {
 
     for(var i = 0; i< groupArr.length; i++) {
         pathStack.push(groupArr[i]);
-        privStack.push(security.decryptCrypt(store.groups[groupArr[i]].users.read[user], userPriv))
+        privStack.push(security.decryptCrypt(json.groups[groupArr[i]].users.read[user], userPriv))
 
         if (groupArr[i] != []) {    // are there subgroups?
             loopGroups(groupArr[i])
@@ -574,11 +625,13 @@ operations.fetchSecrets = function fetchSecrets(userPriv, user) {
 
 // get names of ALL secrets available to a user
 operations.listSecrets = function listSecrets(user) {
+    var json = readJson()
+    
     // get keys from groups in groups
     var groups = operations.getGroupList(user);
     var secrets = []
 
-    var fn = function tellMeYourSecrets(scientist){
+    var tellMeYourSecrets = function tellMeYourSecrets(scientist){
         secrets.concat(json.groups[scientist].secrets.keys);
     };
     groups.forEach(tellMeYourSecrets);
