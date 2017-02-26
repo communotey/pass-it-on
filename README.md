@@ -108,12 +108,10 @@ The U.S. Government Department of Commerce, Bureau of Industry and Security (BIS
 
 ##TODO
 
-- [x] fix store.js
-- [x] test cases: `npm test` fails 😥
-- [ ] [travis-ci tests fail](https://travis-ci.org/communotey/pass-it-on)
-- [ ] [code coverage](https://coveralls.io/github/goatandsheep/pass-it-on?branch=master)
-- [ ] command line commands (`pio.js`)
-- [x] Teach Kemal how to do config and env variables file
+- [x] [travis-ci tests fail](https://travis-ci.org/communotey/pass-it-on)
+- [x] command line commands (`pio.js`)
+- [ ] [code coverage](https://github.com/nickmerwin/node-coveralls)
+- [ ] [jsdocs](http://speakingjs.com/es5/ch29.html)
 - [ ] operations:
     - removeSecret: remove access to user / group
     - deleteSecret: delete memory to secret (give warning:)
@@ -121,5 +119,4 @@ The U.S. Government Department of Commerce, Bureau of Industry and Security (BIS
     - changeGroupKeys: finish/fix implementation
 - [ ] figure out grouping stuff
 - [ ] make `Auth` version of public-facing functions to auto-decrypt pub/priv keys because operations should be only thing that talks to security
-- [x] is it ok that `store.json` is ignored?
 - [ ] allow input of admin email address
